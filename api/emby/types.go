@@ -33,12 +33,7 @@ type EmbySystemInfoResponse struct {
 	HasUpdateAvailable                   bool
 	SupportsAutoRunAtStartup             bool
 	HardwareAccelerationRequiresPremiere bool
-	LocalAddress                         string
-	WanAddress                           string
-	ServerName                           string
-	Version                              string
-	OperatingSystem                      string
-	Id                                   string
+	EmbySystemInfoPublicResponse
 }
 
 type EmbySystemInfoPublicResponse struct {
