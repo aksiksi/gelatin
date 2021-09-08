@@ -63,12 +63,8 @@ func (c *JellyfinApiClient) get(url string, key *api.ApiKey) (*http.Response, er
 
 func (c *JellyfinApiClient) SystemPing() error {
 	url := fmt.Sprintf("%s%s", c.hostname, jellyfinSystemPingEndpoint)
-	resp, err := c.get(url, nil)
+	_, err := c.get(url, nil)
 	if err != nil {
-		return err
-	}
-
-	if err := api.HttpStatusToErr(resp.StatusCode); err != nil {
 		return err
 	}
 
@@ -109,10 +105,6 @@ func (c *JellyfinApiClient) SystemInfo(key api.ApiKey) (*JellyfinSystemInfoRespo
 		return nil, err
 	}
 
-	if err := api.HttpStatusToErr(raw.StatusCode); err != nil {
-		return nil, err
-	}
-
 	resp := &JellyfinSystemInfoResponse{}
 	dec := json.NewDecoder(raw.Body)
 	if err := dec.Decode(resp); err != nil {
@@ -131,10 +123,6 @@ func (c *JellyfinApiClient) SystemInfoPublic() (*JellyfinSystemInfoPublicRespons
 	url := fmt.Sprintf("%s%s", c.hostname, jellyfinSystemInfoPublicEndpoint)
 	raw, err := c.get(url, nil)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := api.HttpStatusToErr(raw.StatusCode); err != nil {
 		return nil, err
 	}
 

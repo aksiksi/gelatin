@@ -25,6 +25,7 @@ type JellyfinSystemServiceApi interface {
 	SystemLogsName(key api.ApiKey, name string) (io.ReadCloser, error)
 	SystemInfo(key api.ApiKey) (*JellyfinSystemInfoResponse, error)
 	SystemInfoPublic() (*JellyfinSystemInfoPublicResponse, error)
+	GetVersion() (string, error)
 }
 
 type JellyfinApi interface {

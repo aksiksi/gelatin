@@ -1,6 +1,7 @@
 package emby
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -63,12 +64,8 @@ func (c *EmbyApiClient) GetVersion() (string, error) {
 
 func (c *EmbyApiClient) SystemPing() error {
 	url := fmt.Sprintf("%s%s", c.hostname, embySystemPingEndpoint)
-	resp, err := c.request(http.MethodPost, url, nil, nil)
+	_, err := c.request(http.MethodPost, url, nil, nil)
 	if err != nil {
-		return err
-	}
-
-	if err := api.HttpStatusToErr(resp.StatusCode); err != nil {
 		return err
 	}
 
@@ -113,10 +110,6 @@ func (c *EmbyApiClient) SystemInfo(key api.ApiKey) (*EmbySystemInfoResponse, err
 		return nil, err
 	}
 
-	if err := api.HttpStatusToErr(raw.StatusCode); err != nil {
-		return nil, err
-	}
-
 	resp := &EmbySystemInfoResponse{}
 	dec := json.NewDecoder(raw.Body)
 	if err := dec.Decode(resp); err != nil {
@@ -138,11 +131,97 @@ func (c *EmbyApiClient) SystemInfoPublic() (*EmbySystemInfoPublicResponse, error
 		return nil, err
 	}
 
-	if err := api.HttpStatusToErr(raw.StatusCode); err != nil {
+	resp := &EmbySystemInfoPublicResponse{}
+	dec := json.NewDecoder(raw.Body)
+	if err := dec.Decode(resp); err != nil {
 		return nil, err
 	}
 
-	resp := &EmbySystemInfoPublicResponse{}
+	return resp, nil
+}
+
+func (c *EmbyApiClient) UserQueryPublic() (*EmbyUserQueryResponse, error) {
+	url := fmt.Sprintf("%s%s", c.hostname, embyUserQueryPublicEndpoint)
+	raw, err := c.get(url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &EmbyUserQueryResponse{}
+	dec := json.NewDecoder(raw.Body)
+	if err := dec.Decode(resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (c *EmbyApiClient) UserQuery(key api.ApiKey) (*EmbyUserQueryResponse, error) {
+	url := fmt.Sprintf("%s%s", c.hostname, embyUserQueryEndpoint)
+	raw, err := c.get(url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &EmbyUserQueryResponse{}
+	dec := json.NewDecoder(raw.Body)
+	if err := dec.Decode(resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (c *EmbyApiClient) UserGet(key api.ApiKey, userId string) (*EmbyUserDto, error) {
+	url := fmt.Sprintf("%s%s/%s", c.hostname, embyUserGetEndpoint, userId)
+	raw, err := c.get(url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &EmbyUserDto{}
+	dec := json.NewDecoder(raw.Body)
+	if err := dec.Decode(resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (c *EmbyApiClient) UserUpdate(key api.ApiKey, userId string, dto *EmbyUserDto) error {
+	url := fmt.Sprintf("%s%s/%s", c.hostname, embyUserUpdateEndpoint, userId)
+
+	data, err := json.Marshal(dto)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), &key)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *EmbyApiClient) UserNew(key api.ApiKey, name string) (*EmbyUserDto, error) {
+	type createUserByName struct {
+		Name string
+	}
+	req := &createUserByName{Name: name}
+
+	data, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	url := fmt.Sprintf("%s%s", c.hostname, embyUserNewEndpoint)
+	raw, err := c.request(http.MethodPost, url, bytes.NewReader(data), &key)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &EmbyUserDto{}
 	dec := json.NewDecoder(raw.Body)
 	if err := dec.Decode(resp); err != nil {
 		return nil, err
