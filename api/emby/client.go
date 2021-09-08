@@ -3,6 +3,7 @@ package emby
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/aksiksi/gelatin/api"
@@ -20,6 +21,37 @@ func NewEmbyApiClient(hostname string, client *http.Client) *EmbyApiClient {
 	}
 }
 
+func (c *EmbyApiClient) request(method string, url string, body io.Reader, key *api.ApiKey) (*http.Response, error) {
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	if key != nil {
+		req.Header.Add(embyApiKeyHeaderName, key.ToString())
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := api.HttpStatusToErr(resp.StatusCode); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (c *EmbyApiClient) get(url string, key *api.ApiKey) (*http.Response, error) {
+	resp, err := c.request(http.MethodGet, url, nil, key)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
 func (c *EmbyApiClient) GetVersion() (string, error) {
 	resp, err := c.SystemInfoPublic()
 	if err != nil {
@@ -31,7 +63,7 @@ func (c *EmbyApiClient) GetVersion() (string, error) {
 
 func (c *EmbyApiClient) SystemPing() error {
 	url := fmt.Sprintf("%s%s", c.hostname, embySystemPingEndpoint)
-	resp, err := c.client.Post(url, "text/plain", nil)
+	resp, err := c.request(http.MethodPost, url, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -43,9 +75,40 @@ func (c *EmbyApiClient) SystemPing() error {
 	return nil
 }
 
-func (c *EmbyApiClient) SystemInfo() (*EmbySystemInfoResponse, error) {
+func (c *EmbyApiClient) SystemLogs(key api.ApiKey, name string) (io.ReadCloser, error) {
+	url := fmt.Sprintf("%s%s/%s", c.hostname, embySystemLogsEndpoint, name)
+	resp, err := c.get(url, &key)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Body, nil
+}
+
+func (c *EmbyApiClient) SystemLogsQuery(key api.ApiKey) (*EmbySystemLogsQueryResponse, error) {
+	url := fmt.Sprintf("%s%s", c.hostname, embySystemLogsQueryEndpoint)
+	raw, err := c.get(url, &key)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &EmbySystemLogsQueryResponse{}
+	dec := json.NewDecoder(raw.Body)
+	if err := dec.Decode(resp); err != nil {
+		return nil, err
+	}
+
+	err = api.Validator.Struct(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (c *EmbyApiClient) SystemInfo(key api.ApiKey) (*EmbySystemInfoResponse, error) {
 	url := fmt.Sprintf("%s%s", c.hostname, embySystemInfoEndpoint)
-	raw, err := c.client.Get(url)
+	raw, err := c.get(url, &key)
 	if err != nil {
 		return nil, err
 	}
@@ -60,12 +123,17 @@ func (c *EmbyApiClient) SystemInfo() (*EmbySystemInfoResponse, error) {
 		return nil, err
 	}
 
+	err = api.Validator.Struct(resp)
+	if err != nil {
+		return nil, err
+	}
+
 	return resp, nil
 }
 
 func (c *EmbyApiClient) SystemInfoPublic() (*EmbySystemInfoPublicResponse, error) {
 	url := fmt.Sprintf("%s%s", c.hostname, embySystemInfoPublicEndpoint)
-	raw, err := c.client.Get(url)
+	raw, err := c.get(url, nil)
 	if err != nil {
 		return nil, err
 	}

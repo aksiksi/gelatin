@@ -4,7 +4,23 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/go-playground/validator/v10"
 )
+
+var Validator *validator.Validate = validator.New()
+
+type ApiKey struct {
+	key string
+}
+
+func NewApiKey(key string) ApiKey {
+	return ApiKey{key}
+}
+
+func (k ApiKey) ToString() string {
+	return k.key
+}
 
 func HttpStatusToErr(code int) error {
 	switch code {

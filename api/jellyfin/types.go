@@ -1,5 +1,17 @@
 package jellyfin
 
+type JellyfinSystemLogFile struct {
+	DateCreated  string `validate:"datetime=2006-01-02T15:04:05.0000000Z"`
+	DateModified string `validate:"datetime=2006-01-02T15:04:05.0000000Z"`
+	Size         int64
+	Name         string
+}
+
+type JellyfinSystemLogsQueryResponse struct {
+	Items            []JellyfinSystemLogFile
+	TotalRecordCount int32
+}
+
 type JellyfinInstallationInfo struct {
 	Id              string `validate:"uuid"`
 	Name            string
