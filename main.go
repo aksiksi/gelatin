@@ -49,6 +49,14 @@ func verifyJellyfin() {
 	logData, _ := io.ReadAll(data)
 
 	log.Printf("got log %s, size = %d, expected = %d", logName, len(logData), logSize)
+
+	// Query available users
+	users, err := client.UserQuery(apiKey)
+	if err != nil {
+		log.Panicf("failed to query users: %s", err)
+	}
+
+	log.Printf("Users count: %d", len(users))
 }
 
 func verifyEmby() {
@@ -83,6 +91,14 @@ func verifyEmby() {
 	logData, _ := io.ReadAll(data)
 
 	log.Printf("got log %s, size = %d, expected = %d", logName, len(logData), logSize)
+
+	// Query available users
+	users, err := client.UserQuery(apiKey)
+	if err != nil {
+		log.Panicf("failed to query users: %s", err)
+	}
+
+	log.Printf("Users count: %d", len(users.Items))
 }
 
 func main() {

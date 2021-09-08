@@ -17,6 +17,11 @@ const (
 	jellyfinSystemLogsNameEndpoint   = "/System/Logs/Log"
 	jellyfinSystemInfoEndpoint       = "/System/Info"
 	jellyfinSystemInfoPublicEndpoint = "/System/Info/Public"
+	jellyfinUserQueryEndpoint        = "/users"
+	jellyfinUserQueryPublicEndpoint  = "/users/public"
+	jellyfinUserGetEndpoint          = "/users"
+	jellyfinUserUpdateEndpoint       = jellyfinUserGetEndpoint
+	jellyfinUserNewEndpoint          = "/users/new"
 )
 
 type JellyfinSystemServiceApi interface {
@@ -28,6 +33,15 @@ type JellyfinSystemServiceApi interface {
 	GetVersion() (string, error)
 }
 
+type JellyfinUserServiceApi interface {
+	UserQueryPublic() ([]*JellyfinUserDto, error)
+	UserQuery(key api.ApiKey) ([]*JellyfinUserDto, error)
+	UserGet(key api.ApiKey, userId string) (*JellyfinUserDto, error)
+	UserUpdate(key api.ApiKey, userId string, dto *JellyfinUserDto) error
+	UserNew(key api.ApiKey, name string) (*JellyfinUserDto, error)
+}
+
 type JellyfinApi interface {
 	JellyfinSystemServiceApi
+	JellyfinUserServiceApi
 }

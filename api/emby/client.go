@@ -158,7 +158,7 @@ func (c *EmbyApiClient) UserQueryPublic() (*EmbyUserQueryResponse, error) {
 
 func (c *EmbyApiClient) UserQuery(key api.ApiKey) (*EmbyUserQueryResponse, error) {
 	url := fmt.Sprintf("%s%s", c.hostname, embyUserQueryEndpoint)
-	raw, err := c.get(url, nil)
+	raw, err := c.get(url, &key)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +174,7 @@ func (c *EmbyApiClient) UserQuery(key api.ApiKey) (*EmbyUserQueryResponse, error
 
 func (c *EmbyApiClient) UserGet(key api.ApiKey, userId string) (*EmbyUserDto, error) {
 	url := fmt.Sprintf("%s%s/%s", c.hostname, embyUserGetEndpoint, userId)
-	raw, err := c.get(url, nil)
+	raw, err := c.get(url, &key)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package jellyfin
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -127,6 +128,96 @@ func (c *JellyfinApiClient) SystemInfoPublic() (*JellyfinSystemInfoPublicRespons
 	}
 
 	resp := &JellyfinSystemInfoPublicResponse{}
+	dec := json.NewDecoder(raw.Body)
+	if err := dec.Decode(resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (c *JellyfinApiClient) UserQueryPublic() ([]*JellyfinUserDto, error) {
+	url := fmt.Sprintf("%s%s", c.hostname, jellyfinUserQueryPublicEndpoint)
+	raw, err := c.get(url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp []*JellyfinUserDto
+	dec := json.NewDecoder(raw.Body)
+	if err := dec.Decode(&resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (c *JellyfinApiClient) UserQuery(key api.ApiKey) ([]*JellyfinUserDto, error) {
+	url := fmt.Sprintf("%s%s", c.hostname, jellyfinUserQueryEndpoint)
+	raw, err := c.get(url, &key)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp []*JellyfinUserDto
+	dec := json.NewDecoder(raw.Body)
+	if err := dec.Decode(&resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (c *JellyfinApiClient) UserGet(key api.ApiKey, userId string) (*JellyfinUserDto, error) {
+	url := fmt.Sprintf("%s%s/%s", c.hostname, jellyfinUserGetEndpoint, userId)
+	raw, err := c.get(url, &key)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &JellyfinUserDto{}
+	dec := json.NewDecoder(raw.Body)
+	if err := dec.Decode(resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (c *JellyfinApiClient) UserUpdate(key api.ApiKey, userId string, dto *JellyfinUserDto) error {
+	url := fmt.Sprintf("%s%s/%s", c.hostname, jellyfinUserUpdateEndpoint, userId)
+
+	data, err := json.Marshal(dto)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), &key)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *JellyfinApiClient) UserNew(key api.ApiKey, name string) (*JellyfinUserDto, error) {
+	type createUserByName struct {
+		Name string
+	}
+	req := &createUserByName{Name: name}
+
+	data, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	url := fmt.Sprintf("%s%s", c.hostname, jellyfinUserNewEndpoint)
+	raw, err := c.request(http.MethodPost, url, bytes.NewReader(data), &key)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &JellyfinUserDto{}
 	dec := json.NewDecoder(raw.Body)
 	if err := dec.Decode(resp); err != nil {
 		return nil, err
