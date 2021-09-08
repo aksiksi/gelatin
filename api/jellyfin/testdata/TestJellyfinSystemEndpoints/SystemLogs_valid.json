@@ -1,0 +1,38 @@
+[
+  {
+    "DateCreated": "2021-09-08T21:40:05.0589887Z",
+    "DateModified": "2021-09-08T21:40:05.0589887Z",
+    "Size": 42837,
+    "Name": "jellyfin20210908.log"
+  },
+  {
+    "DateCreated": "2021-09-07T23:03:42.8799547Z",
+    "DateModified": "2021-09-07T23:03:42.8799547Z",
+    "Size": 343123,
+    "Name": "jellyfin20210907.log"
+  },
+  {
+    "DateCreated": "2021-09-07T01:28:53.5484078Z",
+    "DateModified": "2021-09-07T01:28:53.5484078Z",
+    "Size": 38690,
+    "Name": "FFmpeg.Remux-2021-09-07_01-28-51_d1899a32c9693f362a8e3ecf44b0b2f6_95fce3c8.log"
+  },
+  {
+    "DateCreated": "2021-09-07T01:21:58.4692166Z",
+    "DateModified": "2021-09-07T01:21:58.4692166Z",
+    "Size": 39260,
+    "Name": "FFmpeg.Remux-2021-09-07_01-21-52_d1899a32c9693f362a8e3ecf44b0b2f6_9040ddc2.log"
+  },
+  {
+    "DateCreated": "2021-09-07T00:58:52.4810604Z",
+    "DateModified": "2021-09-07T00:58:52.4810604Z",
+    "Size": 43894,
+    "Name": "FFmpeg.Remux-2021-09-07_00-58-47_eb213623eb311dddfd4dc8c4823fdd90_c1d898fd.log"
+  },
+  {
+    "DateCreated": "2021-09-07T00:31:26.7353052Z",
+    "DateModified": "2021-09-07T00:31:26.7353052Z",
+    "Size": 19993,
+    "Name": "FFmpeg.Transcode-2021-09-07_00-31-23_7eb6ef16a1f858427bf662945f14a2ae_8fdb684c.log"
+  }
+]
