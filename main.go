@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
 	"net/http"
 
@@ -32,12 +33,22 @@ func verifyJellyfin() {
 
 	log.Printf("Jellyfin info: %+v", systemInfo)
 
-	logsInfo, err := client.SystemLogsQuery(apiKey)
+	logsInfo, err := client.SystemLogs(apiKey)
 	if err != nil {
 		log.Panicf("failed to get system logs: %s", err)
 	}
 
 	log.Printf("Jellyfin logs: %+v", logsInfo)
+
+	logName, logSize := logsInfo[0].Name, logsInfo[0].Size
+	data, err := client.SystemLogsName(apiKey, logName)
+	if err != nil {
+		log.Panicf("failed to get system log %s: %s", logName, err)
+	}
+
+	logData, _ := io.ReadAll(data)
+
+	log.Printf("got log %s, size = %d, expected = %d", logName, len(logData), logSize)
 }
 
 func verifyEmby() {
@@ -62,6 +73,16 @@ func verifyEmby() {
 	}
 
 	log.Printf("Emby logs: %+v", logsInfo)
+
+	logName, logSize := logsInfo.Items[0].Name, logsInfo.Items[0].Size
+	data, err := client.SystemLogs(apiKey, logName)
+	if err != nil {
+		log.Panicf("failed to get system log %s: %s", logName, err)
+	}
+
+	logData, _ := io.ReadAll(data)
+
+	log.Printf("got log %s, size = %d, expected = %d", logName, len(logData), logSize)
 }
 
 func main() {

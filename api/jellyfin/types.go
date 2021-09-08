@@ -7,11 +7,6 @@ type JellyfinSystemLogFile struct {
 	Name         string
 }
 
-type JellyfinSystemLogsQueryResponse struct {
-	Items            []JellyfinSystemLogFile
-	TotalRecordCount int32
-}
-
 type JellyfinInstallationInfo struct {
 	Id              string `validate:"uuid"`
 	Name            string

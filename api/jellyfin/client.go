@@ -75,8 +75,9 @@ func (c *JellyfinApiClient) SystemPing() error {
 	return nil
 }
 
-func (c *JellyfinApiClient) SystemLogs(key api.ApiKey, name string) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s%s/%s", c.hostname, jellyfinSystemLogsEndpoint, name)
+func (c *JellyfinApiClient) SystemLogsName(key api.ApiKey, name string) (io.ReadCloser, error) {
+	url := fmt.Sprintf("%s%s?name=%s", c.hostname, jellyfinSystemLogsNameEndpoint, name)
+
 	resp, err := c.get(url, &key)
 	if err != nil {
 		return nil, err
@@ -85,21 +86,16 @@ func (c *JellyfinApiClient) SystemLogs(key api.ApiKey, name string) (io.ReadClos
 	return resp.Body, nil
 }
 
-func (c *JellyfinApiClient) SystemLogsQuery(key api.ApiKey) (*JellyfinSystemLogsQueryResponse, error) {
-	url := fmt.Sprintf("%s%s", c.hostname, jellyfinSystemLogsQueryEndpoint)
+func (c *JellyfinApiClient) SystemLogs(key api.ApiKey) ([]JellyfinSystemLogFile, error) {
+	url := fmt.Sprintf("%s%s", c.hostname, jellyfinSystemLogsEndpoint)
 	raw, err := c.get(url, &key)
 	if err != nil {
 		return nil, err
 	}
 
-	resp := &JellyfinSystemLogsQueryResponse{}
+	var resp []JellyfinSystemLogFile
 	dec := json.NewDecoder(raw.Body)
-	if err := dec.Decode(resp); err != nil {
-		return nil, err
-	}
-
-	err = api.Validator.Struct(resp)
-	if err != nil {
+	if err := dec.Decode(&resp); err != nil {
 		return nil, err
 	}
 
