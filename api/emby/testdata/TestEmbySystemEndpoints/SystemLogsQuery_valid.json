@@ -1,0 +1,53 @@
+{
+  "Items": [
+    {
+      "DateCreated": "2021-09-07T23:51:31.6619113Z",
+      "DateModified": "2021-09-07T23:51:31.6619113Z",
+      "Size": 3403083,
+      "Name": "embyserver.txt"
+    },
+    {
+      "DateCreated": "2021-09-07T01:19:59.8643407Z",
+      "DateModified": "2021-09-07T01:19:59.8643407Z",
+      "Size": 124791,
+      "Name": "hardware_detection-63766574399.txt"
+    },
+    {
+      "DateCreated": "2021-09-07T01:08:53.1200914Z",
+      "DateModified": "2021-09-07T01:08:53.1200914Z",
+      "Size": 234464,
+      "Name": "embyserver-63766574394.txt"
+    },
+    {
+      "DateCreated": "2021-09-07T00:49:53.5920776Z",
+      "DateModified": "2021-09-07T00:49:53.5920776Z",
+      "Size": 124791,
+      "Name": "hardware_detection-63766572593.txt"
+    },
+    {
+      "DateCreated": "2021-09-07T00:11:57.8082836Z",
+      "DateModified": "2021-09-07T00:11:57.8082836Z",
+      "Size": 363981,
+      "Name": "embyserver-63766572588.txt"
+    },
+    {
+      "DateCreated": "2021-09-06T23:42:13.2440571Z",
+      "DateModified": "2021-09-06T23:42:13.2440571Z",
+      "Size": 2870460,
+      "Name": "embyserver-63766569599.txt"
+    },
+    {
+      "DateCreated": "2021-09-05T23:42:34.9990360Z",
+      "DateModified": "2021-09-05T23:42:34.9990360Z",
+      "Size": 3960112,
+      "Name": "embyserver-63766483199.txt"
+    },
+    {
+      "DateCreated": "2021-09-04T23:52:59.8508043Z",
+      "DateModified": "2021-09-04T23:52:59.8508043Z",
+      "Size": 3746059,
+      "Name": "embyserver-63766396799.txt"
+    }
+  ],
+  "TotalRecordCount": 8
+}
