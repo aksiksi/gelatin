@@ -47,8 +47,10 @@ func (c *EmbyApiClient) request(method string, url string, body io.Reader, key a
 		return nil, err
 	}
 
+	req.Header.Add(embyApiKeyAuthHeader, `Emby Client="gelatin", Device="gelatin", DeviceId="007", Version="0.0.1"`)
+
 	if key != nil {
-		req.Header.Add(key.HeaderName(), key.ToString())
+		req.Header.Add(embyApiKeyTokenHeader, key.ToString())
 	}
 
 	resp, err := c.client.Do(req)
@@ -247,4 +249,85 @@ func (c *EmbyApiClient) UserNew(key api.ApiKey, name string) (*EmbyUserDto, erro
 	}
 
 	return resp, nil
+}
+
+func (c *EmbyApiClient) ResetUserPassword(key api.ApiKey, userId string) error {
+	type resetUserPassword struct {
+		Id            string
+		ResetPassword bool
+	}
+
+	req := resetUserPassword{Id: userId, ResetPassword: true}
+	data, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s%s/%s/Password", c.hostname, embyUserPasswordEndpoint, userId)
+	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), key)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *EmbyApiClient) UserPassword(key api.ApiKey, userId, currentPassword, newPassword string, reset bool) error {
+	type setUserPassword struct {
+		Id        string
+		CurrentPw string
+		NewPw     string
+		Reset     bool
+	}
+
+	req := setUserPassword{
+		Id:        userId,
+		CurrentPw: currentPassword,
+		NewPw:     newPassword,
+		Reset:     reset,
+	}
+
+	data, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s%s/%s/Password", c.hostname, embyUserPasswordEndpoint, userId)
+	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), key)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *EmbyApiClient) UserAuth(username, password string) (userKey api.ApiKey, err error) {
+	req := map[string]string{
+		"Username": username,
+		"Pw":       password,
+	}
+
+	data, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	url := fmt.Sprintf("%s%s", c.hostname, embyUserAuthEndpoint)
+	raw, err := c.request(http.MethodPost, url, bytes.NewReader(data), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	type authenticationResult struct {
+		AccessToken string
+	}
+
+	resp := &authenticationResult{}
+
+	dec := json.NewDecoder(raw.Body)
+	if err := dec.Decode(resp); err != nil {
+		return nil, err
+	}
+
+	return NewApiKey(resp.AccessToken), nil
 }

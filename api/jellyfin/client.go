@@ -12,33 +12,18 @@ import (
 )
 
 type jellyfinApiKey struct {
-	key      string
-	client   string
-	device   string
-	deviceId string
-	version  string
+	key string
 }
 
 // NewApiKey returns a new ApiKey for the given client
 func NewApiKey(key string) api.ApiKey {
 	return &jellyfinApiKey{
-		key:      key,
-		client:   "gelatin",
-		device:   "gelatin",
-		deviceId: "gelatin",
-		version:  "0.0.1",
+		key: key,
 	}
 }
 
 func (k *jellyfinApiKey) ToString() string {
-	return fmt.Sprintf(
-		`MediaBrowser Client="%s", Device="%s", DeviceId="%s", Version="%s", Token="%s"`,
-		k.client, k.device, k.deviceId, k.version, k.key,
-	)
-}
-
-func (*jellyfinApiKey) HeaderName() string {
-	return jellyfinApiKeyAuthHeader
+	return k.key
 }
 
 type JellyfinApiClient struct {
@@ -68,8 +53,10 @@ func (c *JellyfinApiClient) request(method string, url string, body io.Reader, k
 		return nil, err
 	}
 
+	req.Header.Add(jellyfinApiKeyAuthHeader, `MediaBrowser Client="gelatin", Device="gelatin", DeviceId="007", Version="0.0.1"`)
+
 	if key != nil {
-		req.Header.Add(key.HeaderName(), key.ToString())
+		req.Header.Add(jellyfinApiKeyTokenHeader, key.ToString())
 	}
 
 	if body != nil {
@@ -323,4 +310,35 @@ func (c *JellyfinApiClient) UserPassword(key api.ApiKey, userId, currentPassword
 	}
 
 	return nil
+}
+
+func (c *JellyfinApiClient) UserAuth(username, password string) (userKey api.ApiKey, err error) {
+	req := map[string]string{
+		"Username": username,
+		"Pw":       password,
+	}
+
+	data, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	url := fmt.Sprintf("%s%s", c.hostname, jellyfinUserAuthEndpoint)
+	raw, err := c.request(http.MethodPost, url, bytes.NewReader(data), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	type authenticationResult struct {
+		AccessToken string
+	}
+
+	resp := &authenticationResult{}
+
+	dec := json.NewDecoder(raw.Body)
+	if err := dec.Decode(resp); err != nil {
+		return nil, err
+	}
+
+	return NewApiKey(resp.AccessToken), nil
 }

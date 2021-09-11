@@ -22,6 +22,8 @@ const (
 	embyUserGetEndpoint          = "/Users"
 	embyUserUpdateEndpoint       = embyUserGetEndpoint
 	embyUserNewEndpoint          = "/Users/New"
+	embyUserPasswordEndpoint     = "/Users"
+	embyUserAuthEndpoint         = "/Users/AuthenticateByName"
 )
 
 type EmbySystemServiceApi interface {
@@ -37,8 +39,10 @@ type EmbyUserServiceApi interface {
 	UserQueryPublic() (*EmbyUserQueryResponse, error)
 	UserQuery(key api.ApiKey) (*EmbyUserQueryResponse, error)
 	UserGet(key api.ApiKey, userId string) (*EmbyUserDto, error)
-	UserUpdate(key api.ApiKey, userId string, dto *EmbyUserDto) error
-	UserNew(key api.ApiKey, name string) (*EmbyUserDto, error)
+	UserUpdate(key api.AdminKey, userId string, dto *EmbyUserDto) error
+	UserNew(key api.AdminKey, name string) (*EmbyUserDto, error)
+	UserPassword(key api.AdminKey, userId, currentPassword, newPassword string, reset bool) error
+	UserAuth(username, password string) (userKey api.ApiKey, err error)
 }
 
 type EmbyApi interface {
