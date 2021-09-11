@@ -251,6 +251,17 @@ func (c *EmbyApiClient) UserNew(key api.ApiKey, name string) (*EmbyUserDto, erro
 	return resp, nil
 }
 
+func (c *EmbyApiClient) UserDelete(key api.ApiKey, userId string) error {
+	url := fmt.Sprintf("%s%s/%s", c.hostname, embyUserDeleteEndpoint, userId)
+
+	_, err := c.request(http.MethodDelete, url, nil, key)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *EmbyApiClient) ResetUserPassword(key api.ApiKey, userId string) error {
 	type resetUserPassword struct {
 		Id            string

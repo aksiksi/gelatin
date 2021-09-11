@@ -64,18 +64,36 @@ func verifyJellyfin() {
 	log.Printf("Users count: %d", len(users))
 
 	// Create a new user
-	// user, err := client.UserNew(apiKey, "test123")
-	// if err != nil {
-	// 	log.Panicf("failed to create new user: %s", err)
-	// }
+	user, err := client.UserNew(adminKey, "test123")
+	if err != nil {
+		log.Panicf("failed to create new user: %s", err)
+	}
 
-	user := users[1]
 	log.Printf("User: %v", user)
 
 	// Set user password
 	err = client.UserPassword(adminKey, user.Id, "", "abcd1234", false)
 	log.Printf("%v", err)
-	// client.ResetUserPassword(adminKey, user.Id)
+
+	// Make the user an admin
+	user, err = client.UserGet(adminKey, user.Id)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	log.Printf("%+v", user.Policy)
+
+	user.Policy.IsAdministrator = true
+
+	err = client.UserPolicy(adminKey, user.Id, &user.Policy)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	err = client.UserDelete(adminKey, user.Id)
+	if err != nil {
+		log.Panic(err)
+	}
 }
 
 func verifyEmby() {
@@ -151,6 +169,6 @@ func main() {
 		log.Fatal("Emby admin info must be specified")
 	}
 
-	verifyEmby()
+	// verifyEmby()
 	verifyJellyfin()
 }

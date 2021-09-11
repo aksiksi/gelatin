@@ -21,10 +21,12 @@ const (
 	jellyfinUserQueryEndpoint        = "/users"
 	jellyfinUserQueryPublicEndpoint  = "/users/public"
 	jellyfinUserGetEndpoint          = "/users"
-	jellyfinUserUpdateEndpoint       = jellyfinUserGetEndpoint
+	jellyfinUserUpdateEndpoint       = "/users"
 	jellyfinUserNewEndpoint          = "/users/new"
+	jellyfinUserDeleteEndpoint       = "/users"
 	jellyfinUserPasswordEndpoint     = "/Users"
 	jellyfinUserAuthEndpoint         = "/Users/AuthenticateByName"
+	jellyfinUserPolicyEndpoint       = "/Users"
 )
 
 type JellyfinSystemServiceApi interface {
@@ -42,8 +44,10 @@ type JellyfinUserServiceApi interface {
 	UserGet(key api.ApiKey, userId string) (*JellyfinUserDto, error)
 	UserUpdate(key api.AdminKey, userId string, dto *JellyfinUserDto) error
 	UserNew(key api.AdminKey, name string) (*JellyfinUserDto, error)
+	UserDelete(key api.AdminKey, userId string) error
 	UserPassword(key api.AdminKey, userId, currentPassword, newPassword string, reset bool) error
 	UserAuth(username, password string) (userKey api.ApiKey, err error)
+	UserPolicy(key api.AdminKey, userId string, policy *JellyfinUserPolicy) error
 }
 
 type JellyfinApi interface {

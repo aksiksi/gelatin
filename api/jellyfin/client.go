@@ -208,7 +208,7 @@ func (c *JellyfinApiClient) UserGet(key api.ApiKey, userId string) (*JellyfinUse
 	return resp, nil
 }
 
-func (c *JellyfinApiClient) UserUpdate(key api.ApiKey, userId string, dto *JellyfinUserDto) error {
+func (c *JellyfinApiClient) UserUpdate(key api.AdminKey, userId string, dto *JellyfinUserDto) error {
 	url := fmt.Sprintf("%s%s/%s", c.hostname, jellyfinUserUpdateEndpoint, userId)
 
 	data, err := json.Marshal(dto)
@@ -250,7 +250,18 @@ func (c *JellyfinApiClient) UserNew(key api.ApiKey, name string) (*JellyfinUserD
 	return resp, nil
 }
 
-func (c *JellyfinApiClient) ResetUserPassword(key api.ApiKey, userId string) error {
+func (c *JellyfinApiClient) UserDelete(key api.ApiKey, userId string) error {
+	url := fmt.Sprintf("%s%s/%s", c.hostname, jellyfinUserDeleteEndpoint, userId)
+
+	_, err := c.request(http.MethodDelete, url, nil, key)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *JellyfinApiClient) ResetUserPassword(key api.AdminKey, userId string) error {
 	type resetUserPassword struct {
 		Id            string
 		ResetPassword bool
@@ -271,7 +282,7 @@ func (c *JellyfinApiClient) ResetUserPassword(key api.ApiKey, userId string) err
 	return nil
 }
 
-func (c *JellyfinApiClient) UserPassword(key api.ApiKey, userId, currentPassword, newPassword string, reset bool) error {
+func (c *JellyfinApiClient) UserPassword(key api.AdminKey, userId, currentPassword, newPassword string, reset bool) error {
 	type setUserPassword struct {
 		Id        string
 		CurrentPw string
@@ -341,4 +352,20 @@ func (c *JellyfinApiClient) UserAuth(username, password string) (userKey api.Api
 	}
 
 	return NewApiKey(resp.AccessToken), nil
+}
+
+func (c *JellyfinApiClient) UserPolicy(key api.AdminKey, userId string, policy *JellyfinUserPolicy) error {
+	url := fmt.Sprintf("%s%s/%s/Policy", c.hostname, jellyfinUserPolicyEndpoint, userId)
+
+	data, err := json.Marshal(policy)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), key)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
