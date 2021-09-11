@@ -265,16 +265,15 @@ func (c *JellyfinApiClient) UserNew(key api.ApiKey, name string) (*JellyfinUserD
 
 func (c *JellyfinApiClient) ResetUserPassword(key api.ApiKey, userId string) error {
 	type resetUserPassword struct {
+		Id            string
 		ResetPassword bool
 	}
 
-	req := resetUserPassword{ResetPassword: true}
+	req := resetUserPassword{Id: userId, ResetPassword: true}
 	data, err := json.Marshal(req)
 	if err != nil {
 		return err
 	}
-
-	log.Printf("request: %s", string(data))
 
 	url := fmt.Sprintf("%s%s/%s/Password", c.hostname, jellyfinUserPasswordEndpoint, userId)
 	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), key)

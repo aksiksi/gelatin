@@ -10,7 +10,9 @@ import (
 var Validator *validator.Validate = validator.New()
 
 type ApiKey interface {
+	// String representation of the key for use in a header
 	ToString() string
+	// Name of the header to use
 	HeaderName() string
 }
 
