@@ -28,13 +28,13 @@ func (k *jellyfinApiKey) ToString() string {
 
 type JellyfinApiClient struct {
 	client   *http.Client
-	hostname string
+	endpoint string
 }
 
 func NewJellyfinApiClient(hostname string, client *http.Client) *JellyfinApiClient {
 	return &JellyfinApiClient{
 		client:   client,
-		hostname: hostname,
+		endpoint: hostname,
 	}
 }
 
@@ -87,7 +87,7 @@ func (c *JellyfinApiClient) get(url string, key api.ApiKey) (*http.Response, err
 }
 
 func (c *JellyfinApiClient) SystemPing() error {
-	url := fmt.Sprintf("%s%s", c.hostname, jellyfinSystemPingEndpoint)
+	url := fmt.Sprintf("%s%s", c.endpoint, jellyfinSystemPingEndpoint)
 	_, err := c.get(url, nil)
 	if err != nil {
 		return err
@@ -97,7 +97,7 @@ func (c *JellyfinApiClient) SystemPing() error {
 }
 
 func (c *JellyfinApiClient) SystemLogsName(key api.ApiKey, name string) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s%s?name=%s", c.hostname, jellyfinSystemLogsNameEndpoint, name)
+	url := fmt.Sprintf("%s%s?name=%s", c.endpoint, jellyfinSystemLogsNameEndpoint, name)
 
 	resp, err := c.get(url, key)
 	if err != nil {
@@ -108,7 +108,7 @@ func (c *JellyfinApiClient) SystemLogsName(key api.ApiKey, name string) (io.Read
 }
 
 func (c *JellyfinApiClient) SystemLogs(key api.ApiKey) ([]JellyfinSystemLogFile, error) {
-	url := fmt.Sprintf("%s%s", c.hostname, jellyfinSystemLogsEndpoint)
+	url := fmt.Sprintf("%s%s", c.endpoint, jellyfinSystemLogsEndpoint)
 	raw, err := c.get(url, key)
 	if err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func (c *JellyfinApiClient) SystemLogs(key api.ApiKey) ([]JellyfinSystemLogFile,
 }
 
 func (c *JellyfinApiClient) SystemInfo(key api.ApiKey) (*JellyfinSystemInfoResponse, error) {
-	url := fmt.Sprintf("%s%s", c.hostname, jellyfinSystemInfoEndpoint)
+	url := fmt.Sprintf("%s%s", c.endpoint, jellyfinSystemInfoEndpoint)
 	raw, err := c.get(url, key)
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func (c *JellyfinApiClient) SystemInfo(key api.ApiKey) (*JellyfinSystemInfoRespo
 }
 
 func (c *JellyfinApiClient) SystemInfoPublic() (*JellyfinSystemInfoPublicResponse, error) {
-	url := fmt.Sprintf("%s%s", c.hostname, jellyfinSystemInfoPublicEndpoint)
+	url := fmt.Sprintf("%s%s", c.endpoint, jellyfinSystemInfoPublicEndpoint)
 	raw, err := c.get(url, nil)
 	if err != nil {
 		return nil, err
@@ -161,7 +161,7 @@ func (c *JellyfinApiClient) SystemInfoPublic() (*JellyfinSystemInfoPublicRespons
 }
 
 func (c *JellyfinApiClient) UserQueryPublic() ([]*JellyfinUserDto, error) {
-	url := fmt.Sprintf("%s%s", c.hostname, jellyfinUserQueryPublicEndpoint)
+	url := fmt.Sprintf("%s%s", c.endpoint, jellyfinUserQueryPublicEndpoint)
 	raw, err := c.get(url, nil)
 	if err != nil {
 		return nil, err
@@ -177,7 +177,7 @@ func (c *JellyfinApiClient) UserQueryPublic() ([]*JellyfinUserDto, error) {
 }
 
 func (c *JellyfinApiClient) UserQuery(key api.ApiKey) ([]*JellyfinUserDto, error) {
-	url := fmt.Sprintf("%s%s", c.hostname, jellyfinUserQueryEndpoint)
+	url := fmt.Sprintf("%s%s", c.endpoint, jellyfinUserQueryEndpoint)
 	raw, err := c.get(url, key)
 	if err != nil {
 		return nil, err
@@ -193,7 +193,7 @@ func (c *JellyfinApiClient) UserQuery(key api.ApiKey) ([]*JellyfinUserDto, error
 }
 
 func (c *JellyfinApiClient) UserGet(key api.ApiKey, userId string) (*JellyfinUserDto, error) {
-	url := fmt.Sprintf("%s%s/%s", c.hostname, jellyfinUserGetEndpoint, userId)
+	url := fmt.Sprintf("%s%s/%s", c.endpoint, jellyfinUserGetEndpoint, userId)
 	raw, err := c.get(url, key)
 	if err != nil {
 		return nil, err
@@ -209,7 +209,7 @@ func (c *JellyfinApiClient) UserGet(key api.ApiKey, userId string) (*JellyfinUse
 }
 
 func (c *JellyfinApiClient) UserUpdate(key api.AdminKey, userId string, dto *JellyfinUserDto) error {
-	url := fmt.Sprintf("%s%s/%s", c.hostname, jellyfinUserUpdateEndpoint, userId)
+	url := fmt.Sprintf("%s%s/%s", c.endpoint, jellyfinUserUpdateEndpoint, userId)
 
 	data, err := json.Marshal(dto)
 	if err != nil {
@@ -235,7 +235,7 @@ func (c *JellyfinApiClient) UserNew(key api.ApiKey, name string) (*JellyfinUserD
 		return nil, err
 	}
 
-	url := fmt.Sprintf("%s%s", c.hostname, jellyfinUserNewEndpoint)
+	url := fmt.Sprintf("%s%s", c.endpoint, jellyfinUserNewEndpoint)
 	raw, err := c.request(http.MethodPost, url, bytes.NewReader(data), key)
 	if err != nil {
 		return nil, err
@@ -251,7 +251,7 @@ func (c *JellyfinApiClient) UserNew(key api.ApiKey, name string) (*JellyfinUserD
 }
 
 func (c *JellyfinApiClient) UserDelete(key api.ApiKey, userId string) error {
-	url := fmt.Sprintf("%s%s/%s", c.hostname, jellyfinUserDeleteEndpoint, userId)
+	url := fmt.Sprintf("%s%s/%s", c.endpoint, jellyfinUserDeleteEndpoint, userId)
 
 	_, err := c.request(http.MethodDelete, url, nil, key)
 	if err != nil {
@@ -273,7 +273,7 @@ func (c *JellyfinApiClient) ResetUserPassword(key api.AdminKey, userId string) e
 		return err
 	}
 
-	url := fmt.Sprintf("%s%s/%s/Password", c.hostname, jellyfinUserPasswordEndpoint, userId)
+	url := fmt.Sprintf("%s%s/%s/Password", c.endpoint, jellyfinUserPasswordEndpoint, userId)
 	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), key)
 	if err != nil {
 		return err
@@ -314,7 +314,7 @@ func (c *JellyfinApiClient) UserPassword(key api.AdminKey, userId, currentPasswo
 		return err
 	}
 
-	url := fmt.Sprintf("%s%s/%s/Password", c.hostname, jellyfinUserPasswordEndpoint, userId)
+	url := fmt.Sprintf("%s%s/%s/Password", c.endpoint, jellyfinUserPasswordEndpoint, userId)
 	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), key)
 	if err != nil {
 		return err
@@ -334,7 +334,7 @@ func (c *JellyfinApiClient) UserAuth(username, password string) (userKey api.Api
 		return nil, err
 	}
 
-	url := fmt.Sprintf("%s%s", c.hostname, jellyfinUserAuthEndpoint)
+	url := fmt.Sprintf("%s%s", c.endpoint, jellyfinUserAuthEndpoint)
 	raw, err := c.request(http.MethodPost, url, bytes.NewReader(data), nil)
 	if err != nil {
 		return nil, err
@@ -355,7 +355,7 @@ func (c *JellyfinApiClient) UserAuth(username, password string) (userKey api.Api
 }
 
 func (c *JellyfinApiClient) UserPolicy(key api.AdminKey, userId string, policy *JellyfinUserPolicy) error {
-	url := fmt.Sprintf("%s%s/%s/Policy", c.hostname, jellyfinUserPolicyEndpoint, userId)
+	url := fmt.Sprintf("%s%s/%s/Policy", c.endpoint, jellyfinUserPolicyEndpoint, userId)
 
 	data, err := json.Marshal(policy)
 	if err != nil {

@@ -31,13 +31,13 @@ func (*embyApiKey) HeaderName() string {
 
 type EmbyApiClient struct {
 	client   *http.Client
-	hostname string
+	endpoint string
 }
 
 func NewEmbyApiClient(hostname string, client *http.Client) *EmbyApiClient {
 	return &EmbyApiClient{
 		client:   client,
-		hostname: hostname,
+		endpoint: fmt.Sprintf("%s/emby", hostname),
 	}
 }
 
@@ -84,7 +84,7 @@ func (c *EmbyApiClient) GetVersion() (string, error) {
 }
 
 func (c *EmbyApiClient) SystemPing() error {
-	url := fmt.Sprintf("%s%s", c.hostname, embySystemPingEndpoint)
+	url := fmt.Sprintf("%s%s", c.endpoint, embySystemPingEndpoint)
 	_, err := c.request(http.MethodPost, url, nil, nil)
 	if err != nil {
 		return err
@@ -94,7 +94,7 @@ func (c *EmbyApiClient) SystemPing() error {
 }
 
 func (c *EmbyApiClient) SystemLogs(key api.ApiKey, name string) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s%s/%s", c.hostname, embySystemLogsEndpoint, name)
+	url := fmt.Sprintf("%s%s/%s", c.endpoint, embySystemLogsEndpoint, name)
 	resp, err := c.get(url, key)
 	if err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func (c *EmbyApiClient) SystemLogs(key api.ApiKey, name string) (io.ReadCloser, 
 }
 
 func (c *EmbyApiClient) SystemLogsQuery(key api.ApiKey) (*EmbySystemLogsQueryResponse, error) {
-	url := fmt.Sprintf("%s%s", c.hostname, embySystemLogsQueryEndpoint)
+	url := fmt.Sprintf("%s%s", c.endpoint, embySystemLogsQueryEndpoint)
 	raw, err := c.get(url, key)
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func (c *EmbyApiClient) SystemLogsQuery(key api.ApiKey) (*EmbySystemLogsQueryRes
 }
 
 func (c *EmbyApiClient) SystemInfo(key api.ApiKey) (*EmbySystemInfoResponse, error) {
-	url := fmt.Sprintf("%s%s", c.hostname, embySystemInfoEndpoint)
+	url := fmt.Sprintf("%s%s", c.endpoint, embySystemInfoEndpoint)
 	raw, err := c.get(url, key)
 	if err != nil {
 		return nil, err
@@ -146,7 +146,7 @@ func (c *EmbyApiClient) SystemInfo(key api.ApiKey) (*EmbySystemInfoResponse, err
 }
 
 func (c *EmbyApiClient) SystemInfoPublic() (*EmbySystemInfoPublicResponse, error) {
-	url := fmt.Sprintf("%s%s", c.hostname, embySystemInfoPublicEndpoint)
+	url := fmt.Sprintf("%s%s", c.endpoint, embySystemInfoPublicEndpoint)
 	raw, err := c.get(url, nil)
 	if err != nil {
 		return nil, err
@@ -162,7 +162,7 @@ func (c *EmbyApiClient) SystemInfoPublic() (*EmbySystemInfoPublicResponse, error
 }
 
 func (c *EmbyApiClient) UserQueryPublic() (*EmbyUserQueryResponse, error) {
-	url := fmt.Sprintf("%s%s", c.hostname, embyUserQueryPublicEndpoint)
+	url := fmt.Sprintf("%s%s", c.endpoint, embyUserQueryPublicEndpoint)
 	raw, err := c.get(url, nil)
 	if err != nil {
 		return nil, err
@@ -178,7 +178,7 @@ func (c *EmbyApiClient) UserQueryPublic() (*EmbyUserQueryResponse, error) {
 }
 
 func (c *EmbyApiClient) UserQuery(key api.ApiKey) (*EmbyUserQueryResponse, error) {
-	url := fmt.Sprintf("%s%s", c.hostname, embyUserQueryEndpoint)
+	url := fmt.Sprintf("%s%s", c.endpoint, embyUserQueryEndpoint)
 	raw, err := c.get(url, key)
 	if err != nil {
 		return nil, err
@@ -194,7 +194,7 @@ func (c *EmbyApiClient) UserQuery(key api.ApiKey) (*EmbyUserQueryResponse, error
 }
 
 func (c *EmbyApiClient) UserGet(key api.ApiKey, userId string) (*EmbyUserDto, error) {
-	url := fmt.Sprintf("%s%s/%s", c.hostname, embyUserGetEndpoint, userId)
+	url := fmt.Sprintf("%s%s/%s", c.endpoint, embyUserGetEndpoint, userId)
 	raw, err := c.get(url, key)
 	if err != nil {
 		return nil, err
@@ -210,7 +210,7 @@ func (c *EmbyApiClient) UserGet(key api.ApiKey, userId string) (*EmbyUserDto, er
 }
 
 func (c *EmbyApiClient) UserUpdate(key api.ApiKey, userId string, dto *EmbyUserDto) error {
-	url := fmt.Sprintf("%s%s/%s", c.hostname, embyUserUpdateEndpoint, userId)
+	url := fmt.Sprintf("%s%s/%s", c.endpoint, embyUserUpdateEndpoint, userId)
 
 	data, err := json.Marshal(dto)
 	if err != nil {
@@ -236,7 +236,7 @@ func (c *EmbyApiClient) UserNew(key api.ApiKey, name string) (*EmbyUserDto, erro
 		return nil, err
 	}
 
-	url := fmt.Sprintf("%s%s", c.hostname, embyUserNewEndpoint)
+	url := fmt.Sprintf("%s%s", c.endpoint, embyUserNewEndpoint)
 	raw, err := c.request(http.MethodPost, url, bytes.NewReader(data), key)
 	if err != nil {
 		return nil, err
@@ -252,7 +252,7 @@ func (c *EmbyApiClient) UserNew(key api.ApiKey, name string) (*EmbyUserDto, erro
 }
 
 func (c *EmbyApiClient) UserDelete(key api.ApiKey, userId string) error {
-	url := fmt.Sprintf("%s%s/%s", c.hostname, embyUserDeleteEndpoint, userId)
+	url := fmt.Sprintf("%s%s/%s", c.endpoint, embyUserDeleteEndpoint, userId)
 
 	_, err := c.request(http.MethodDelete, url, nil, key)
 	if err != nil {
@@ -274,7 +274,7 @@ func (c *EmbyApiClient) ResetUserPassword(key api.ApiKey, userId string) error {
 		return err
 	}
 
-	url := fmt.Sprintf("%s%s/%s/Password", c.hostname, embyUserPasswordEndpoint, userId)
+	url := fmt.Sprintf("%s%s/%s/Password", c.endpoint, embyUserPasswordEndpoint, userId)
 	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), key)
 	if err != nil {
 		return err
@@ -303,7 +303,7 @@ func (c *EmbyApiClient) UserPassword(key api.ApiKey, userId, currentPassword, ne
 		return err
 	}
 
-	url := fmt.Sprintf("%s%s/%s/Password", c.hostname, embyUserPasswordEndpoint, userId)
+	url := fmt.Sprintf("%s%s/%s/Password", c.endpoint, embyUserPasswordEndpoint, userId)
 	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), key)
 	if err != nil {
 		return err
@@ -323,7 +323,7 @@ func (c *EmbyApiClient) UserAuth(username, password string) (userKey api.ApiKey,
 		return nil, err
 	}
 
-	url := fmt.Sprintf("%s%s", c.hostname, embyUserAuthEndpoint)
+	url := fmt.Sprintf("%s%s", c.endpoint, embyUserAuthEndpoint)
 	raw, err := c.request(http.MethodPost, url, bytes.NewReader(data), nil)
 	if err != nil {
 		return nil, err

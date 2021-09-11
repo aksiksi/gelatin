@@ -98,7 +98,7 @@ func verifyJellyfin() {
 
 func verifyEmby() {
 	httpClient := &http.Client{Timeout: 10 * time.Second}
-	client := emby.NewEmbyApiClient("http://192.168.0.99:8096/emby", httpClient)
+	client := emby.NewEmbyApiClient("http://192.168.0.99:8096", httpClient)
 
 	if err := client.SystemPing(); err != nil {
 		log.Panicf("failed to ping: %s", err)
