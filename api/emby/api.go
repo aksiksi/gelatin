@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	embyApiKeyHeaderName = "X-Emby-Token"
+	embyApiKeyAuthHeader  = "X-Emby-Authorization"
+	embyApiKeyTokenHeader = "X-Emby-Token"
 )
 
 const (

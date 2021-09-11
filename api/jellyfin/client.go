@@ -11,6 +11,36 @@ import (
 	"github.com/aksiksi/gelatin/api"
 )
 
+type jellyfinApiKey struct {
+	key      string
+	client   string
+	device   string
+	deviceId string
+	version  string
+}
+
+// NewApiKey returns a new ApiKey for the given client
+func NewApiKey(key string) api.ApiKey {
+	return &jellyfinApiKey{
+		key:      key,
+		client:   "gelatin",
+		device:   "gelatin",
+		deviceId: "gelatin",
+		version:  "0.0.1",
+	}
+}
+
+func (k *jellyfinApiKey) ToString() string {
+	return fmt.Sprintf(
+		`MediaBrowser Client="%s", Device="%s", DeviceId="%s", Version="%s", Token="%s"`,
+		k.client, k.device, k.deviceId, k.version, k.key,
+	)
+}
+
+func (*jellyfinApiKey) HeaderName() string {
+	return jellyfinApiKeyAuthHeader
+}
+
 type JellyfinApiClient struct {
 	client   *http.Client
 	hostname string
@@ -32,14 +62,14 @@ func (c *JellyfinApiClient) GetVersion() (string, error) {
 	return resp.Version, nil
 }
 
-func (c *JellyfinApiClient) request(method string, url string, body io.Reader, key *api.ApiKey) (*http.Response, error) {
+func (c *JellyfinApiClient) request(method string, url string, body io.Reader, key api.ApiKey) (*http.Response, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}
 
 	if key != nil {
-		req.Header.Add(jellyfinApiKeyHeaderName, key.ToString())
+		req.Header.Add(key.HeaderName(), key.ToString())
 	}
 
 	if body != nil {
@@ -60,7 +90,7 @@ func (c *JellyfinApiClient) request(method string, url string, body io.Reader, k
 	return resp, nil
 }
 
-func (c *JellyfinApiClient) get(url string, key *api.ApiKey) (*http.Response, error) {
+func (c *JellyfinApiClient) get(url string, key api.ApiKey) (*http.Response, error) {
 	resp, err := c.request(http.MethodGet, url, nil, key)
 	if err != nil {
 		return nil, err
@@ -82,7 +112,7 @@ func (c *JellyfinApiClient) SystemPing() error {
 func (c *JellyfinApiClient) SystemLogsName(key api.ApiKey, name string) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s%s?name=%s", c.hostname, jellyfinSystemLogsNameEndpoint, name)
 
-	resp, err := c.get(url, &key)
+	resp, err := c.get(url, key)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +122,7 @@ func (c *JellyfinApiClient) SystemLogsName(key api.ApiKey, name string) (io.Read
 
 func (c *JellyfinApiClient) SystemLogs(key api.ApiKey) ([]JellyfinSystemLogFile, error) {
 	url := fmt.Sprintf("%s%s", c.hostname, jellyfinSystemLogsEndpoint)
-	raw, err := c.get(url, &key)
+	raw, err := c.get(url, key)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +138,7 @@ func (c *JellyfinApiClient) SystemLogs(key api.ApiKey) ([]JellyfinSystemLogFile,
 
 func (c *JellyfinApiClient) SystemInfo(key api.ApiKey) (*JellyfinSystemInfoResponse, error) {
 	url := fmt.Sprintf("%s%s", c.hostname, jellyfinSystemInfoEndpoint)
-	raw, err := c.get(url, &key)
+	raw, err := c.get(url, key)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +191,7 @@ func (c *JellyfinApiClient) UserQueryPublic() ([]*JellyfinUserDto, error) {
 
 func (c *JellyfinApiClient) UserQuery(key api.ApiKey) ([]*JellyfinUserDto, error) {
 	url := fmt.Sprintf("%s%s", c.hostname, jellyfinUserQueryEndpoint)
-	raw, err := c.get(url, &key)
+	raw, err := c.get(url, key)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +207,7 @@ func (c *JellyfinApiClient) UserQuery(key api.ApiKey) ([]*JellyfinUserDto, error
 
 func (c *JellyfinApiClient) UserGet(key api.ApiKey, userId string) (*JellyfinUserDto, error) {
 	url := fmt.Sprintf("%s%s/%s", c.hostname, jellyfinUserGetEndpoint, userId)
-	raw, err := c.get(url, &key)
+	raw, err := c.get(url, key)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +229,7 @@ func (c *JellyfinApiClient) UserUpdate(key api.ApiKey, userId string, dto *Jelly
 		return err
 	}
 
-	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), &key)
+	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), key)
 	if err != nil {
 		return err
 	}
@@ -219,7 +249,7 @@ func (c *JellyfinApiClient) UserNew(key api.ApiKey, name string) (*JellyfinUserD
 	}
 
 	url := fmt.Sprintf("%s%s", c.hostname, jellyfinUserNewEndpoint)
-	raw, err := c.request(http.MethodPost, url, bytes.NewReader(data), &key)
+	raw, err := c.request(http.MethodPost, url, bytes.NewReader(data), key)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +277,7 @@ func (c *JellyfinApiClient) ResetUserPassword(key api.ApiKey, userId string) err
 	log.Printf("request: %s", string(data))
 
 	url := fmt.Sprintf("%s%s/%s/Password", c.hostname, jellyfinUserPasswordEndpoint, userId)
-	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), &key)
+	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), key)
 	if err != nil {
 		return err
 	}
@@ -288,7 +318,7 @@ func (c *JellyfinApiClient) UserPassword(key api.ApiKey, userId, currentPassword
 	}
 
 	url := fmt.Sprintf("%s%s/%s/Password", c.hostname, jellyfinUserPasswordEndpoint, userId)
-	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), &key)
+	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), key)
 	if err != nil {
 		return err
 	}

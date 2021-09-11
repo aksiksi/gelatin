@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/aksiksi/gelatin/api"
 	"github.com/aksiksi/gelatin/api/emby"
 	"github.com/aksiksi/gelatin/api/jellyfin"
 )
@@ -19,7 +18,7 @@ var (
 func verifyJellyfin() {
 	httpClient := &http.Client{}
 	client := jellyfin.NewJellyfinApiClient("http://192.168.0.99:8097", httpClient)
-	apiKey := api.NewApiKey(jellyfinApiKey, true)
+	apiKey := jellyfin.NewApiKey(jellyfinApiKey)
 
 	if err := client.SystemPing(); err != nil {
 		log.Panicf("failed to ping: %s", err)
@@ -76,7 +75,7 @@ func verifyJellyfin() {
 func verifyEmby() {
 	httpClient := &http.Client{}
 	client := emby.NewEmbyApiClient("http://192.168.0.99:8096/emby", httpClient)
-	apiKey := api.NewApiKey(embyApiKey, false)
+	apiKey := emby.NewApiKey(embyApiKey)
 
 	if err := client.SystemPing(); err != nil {
 		log.Panicf("failed to ping: %s", err)

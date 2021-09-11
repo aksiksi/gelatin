@@ -8,7 +8,8 @@ import (
 
 const (
 	// See: https://github.com/jellyfin/jellyfin/blob/8c463b9b8196530e6d417b40ed81825422cada32/Jellyfin.Server.Implementations/Security/AuthorizationContext.cs#L80
-	jellyfinApiKeyHeaderName = "X-Emby-Authorization"
+	jellyfinApiKeyAuthHeader  = "X-Emby-Authorization"
+	jellyfinApiKeyTokenHeader = "X-Emby-Token"
 )
 
 const (

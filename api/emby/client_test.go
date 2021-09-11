@@ -9,7 +9,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aksiksi/gelatin/api"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -43,7 +42,7 @@ func TestEmbySystemEndpoints(t *testing.T) {
 	client, srv, s := setUp(t)
 	defer srv.Close()
 
-	apiKey := api.NewApiKey("test123", false)
+	apiKey := NewApiKey("test123")
 
 	s.status = http.StatusOK
 
