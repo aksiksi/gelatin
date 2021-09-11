@@ -15,12 +15,11 @@ var (
 	jellyfinApiKey string
 	embyApiKey     string
 )
-var ()
 
 func verifyJellyfin() {
 	httpClient := &http.Client{}
 	client := jellyfin.NewJellyfinApiClient("http://192.168.0.99:8097", httpClient)
-	apiKey := api.NewApiKey(jellyfinApiKey)
+	apiKey := api.NewApiKey(jellyfinApiKey, true)
 
 	if err := client.SystemPing(); err != nil {
 		log.Panicf("failed to ping: %s", err)
@@ -57,12 +56,27 @@ func verifyJellyfin() {
 	}
 
 	log.Printf("Users count: %d", len(users))
+
+	// Create a new user
+	// user, err := client.UserNew(apiKey, "test123")
+	// if err != nil {
+	// 	log.Panicf("failed to create new user: %s", err)
+	// }
+
+	user := users[1]
+	log.Printf("User: %v", user)
+
+	// Set user password
+	// err = client.UserPassword(apiKey, user.Id, "", "abcd1234", false)
+	// log.Printf("%v", err)
+	err = client.ResetUserPassword(apiKey, user.Id)
+	log.Print(err.Error())
 }
 
 func verifyEmby() {
 	httpClient := &http.Client{}
 	client := emby.NewEmbyApiClient("http://192.168.0.99:8096/emby", httpClient)
-	apiKey := api.NewApiKey(embyApiKey)
+	apiKey := api.NewApiKey(embyApiKey, false)
 
 	if err := client.SystemPing(); err != nil {
 		log.Panicf("failed to ping: %s", err)

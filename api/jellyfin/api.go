@@ -8,7 +8,7 @@ import (
 
 const (
 	// See: https://github.com/jellyfin/jellyfin/blob/8c463b9b8196530e6d417b40ed81825422cada32/Jellyfin.Server.Implementations/Security/AuthorizationContext.cs#L80
-	jellyfinApiKeyHeaderName = "X-Emby-Token"
+	jellyfinApiKeyHeaderName = "X-Emby-Authorization"
 )
 
 const (
@@ -22,6 +22,7 @@ const (
 	jellyfinUserGetEndpoint          = "/users"
 	jellyfinUserUpdateEndpoint       = jellyfinUserGetEndpoint
 	jellyfinUserNewEndpoint          = "/users/new"
+	jellyfinUserPasswordEndpoint     = "/Users"
 )
 
 type JellyfinSystemServiceApi interface {
@@ -39,6 +40,7 @@ type JellyfinUserServiceApi interface {
 	UserGet(key api.ApiKey, userId string) (*JellyfinUserDto, error)
 	UserUpdate(key api.ApiKey, userId string, dto *JellyfinUserDto) error
 	UserNew(key api.ApiKey, name string) (*JellyfinUserDto, error)
+	UserPassword(key api.ApiKey, userId, currentPassword, newPassword string, reset bool) error
 }
 
 type JellyfinApi interface {

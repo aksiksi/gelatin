@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/aksiksi/gelatin/api"
@@ -41,12 +42,18 @@ func (c *JellyfinApiClient) request(method string, url string, body io.Reader, k
 		req.Header.Add(jellyfinApiKeyHeaderName, key.ToString())
 	}
 
+	if body != nil {
+		req.Header.Add("Content-Type", "application/json")
+	}
+
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 
 	if err := api.HttpStatusToErr(resp.StatusCode); err != nil {
+		body, _ := io.ReadAll(resp.Body)
+		log.Printf("response body: %s", body)
 		return nil, err
 	}
 
@@ -204,7 +211,7 @@ func (c *JellyfinApiClient) UserNew(key api.ApiKey, name string) (*JellyfinUserD
 	type createUserByName struct {
 		Name string
 	}
-	req := &createUserByName{Name: name}
+	req := createUserByName{Name: name}
 
 	data, err := json.Marshal(req)
 	if err != nil {
@@ -224,4 +231,67 @@ func (c *JellyfinApiClient) UserNew(key api.ApiKey, name string) (*JellyfinUserD
 	}
 
 	return resp, nil
+}
+
+func (c *JellyfinApiClient) ResetUserPassword(key api.ApiKey, userId string) error {
+	type resetUserPassword struct {
+		ResetPassword bool
+	}
+
+	req := resetUserPassword{ResetPassword: true}
+	data, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("request: %s", string(data))
+
+	url := fmt.Sprintf("%s%s/%s/Password", c.hostname, jellyfinUserPasswordEndpoint, userId)
+	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), &key)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *JellyfinApiClient) UserPassword(key api.ApiKey, userId, currentPassword, newPassword string, reset bool) error {
+	type setUserPassword struct {
+		Id        string
+		CurrentPw string
+		NewPw     string
+	}
+
+	// Apparently, you need to always reset the user's password, even if you're
+	// just changing it...
+	//
+	// See this issue for details: https://github.com/jellyfin/jellyfin/issues/1297
+	if err := c.ResetUserPassword(key, userId); err != nil {
+		return err
+	}
+
+	log.Print("done")
+
+	if reset {
+		return nil
+	}
+
+	req := setUserPassword{
+		Id:        userId,
+		CurrentPw: currentPassword,
+		NewPw:     newPassword,
+	}
+
+	data, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s%s/%s/Password", c.hostname, jellyfinUserPasswordEndpoint, userId)
+	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), &key)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

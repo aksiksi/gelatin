@@ -43,7 +43,7 @@ func TestEmbySystemEndpoints(t *testing.T) {
 	client, srv, s := setUp(t)
 	defer srv.Close()
 
-	apiKey := api.NewApiKey("test123")
+	apiKey := api.NewApiKey("test123", false)
 
 	s.status = http.StatusOK
 

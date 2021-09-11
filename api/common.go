@@ -11,30 +11,46 @@ import (
 var Validator *validator.Validate = validator.New()
 
 type ApiKey struct {
-	key string
+	key      string
+	client   string
+	device   string
+	deviceId string
+	version  string
 }
 
-func NewApiKey(key string) ApiKey {
-	return ApiKey{key}
+// NewApiKey returns a new ApiKey
+//
+// If auth is true, the key will contain full authorization info
+func NewApiKey(key string, auth bool) ApiKey {
+	if !auth {
+		return ApiKey{key: key}
+	} else {
+		return ApiKey{
+			key:      key,
+			client:   "gelatin",
+			device:   "gelatin",
+			deviceId: "gelatin",
+			version:  "0.0.1",
+		}
+	}
 }
 
 func (k ApiKey) ToString() string {
-	return k.key
+	if k.client == "" {
+		return k.key
+	} else {
+		return fmt.Sprintf(
+			`MediaBrowser Client="%s", Device="%s", DeviceId="%s", Version="%s", Token="%s"`,
+			k.client, k.device, k.deviceId, k.version, k.key,
+		)
+	}
 }
 
 func HttpStatusToErr(code int) error {
 	switch code {
-	case http.StatusOK:
+	case http.StatusOK, http.StatusNoContent:
 		return nil
-	case http.StatusBadRequest:
-		return errors.New("bad request")
-	case http.StatusUnauthorized:
-		return errors.New("unauthorized")
-	case http.StatusForbidden:
-		return errors.New("forbidden")
-	case http.StatusNotFound:
-		return errors.New("not found")
 	default:
-		return fmt.Errorf("internal server error: %d", code)
+		return errors.New(http.StatusText(code))
 	}
 }
