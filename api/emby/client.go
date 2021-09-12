@@ -165,16 +165,16 @@ func (c *EmbyApiClient) SystemInfoPublic() (*EmbySystemInfoPublicResponse, error
 	return resp, nil
 }
 
-func (c *EmbyApiClient) UserQueryPublic() (*EmbyUserQueryResponse, error) {
+func (c *EmbyApiClient) UserQueryPublic() ([]*EmbyUserDto, error) {
 	url := fmt.Sprintf("%s%s", c.hostname, embyUserQueryPublicEndpoint)
 	raw, err := c.get(url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	resp := &EmbyUserQueryResponse{}
+	var resp []*EmbyUserDto
 	dec := json.NewDecoder(raw.Body)
-	if err := dec.Decode(resp); err != nil {
+	if err := dec.Decode(&resp); err != nil {
 		return nil, err
 	}
 
@@ -333,12 +333,7 @@ func (c *EmbyApiClient) UserAuth(username, password string) (userKey api.ApiKey,
 		return nil, err
 	}
 
-	type authenticationResult struct {
-		AccessToken string
-		// Other fields ommitted
-	}
-
-	resp := &authenticationResult{}
+	resp := &EmbyUserAuthResponse{}
 
 	dec := json.NewDecoder(raw.Body)
 	if err := dec.Decode(resp); err != nil {

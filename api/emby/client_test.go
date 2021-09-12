@@ -135,3 +135,158 @@ func TestEmbySystemEndpoints(t *testing.T) {
 		}
 	})
 }
+
+func TestEmbyUserEndpoints(t *testing.T) {
+	client, srv, s := setUp(t)
+	defer srv.Close()
+
+	apiKey := NewApiKey("test123")
+
+	s.status = http.StatusOK
+
+	t.Run("UserQueryPublic", func(t *testing.T) {
+		wantResp := []byte(`[
+			{
+				"Name": "test",
+				"Id": "100000x00000",
+				"HasConfiguredPassword": true
+			}
+		]`)
+
+		s.resp = wantResp
+
+		var want []*EmbyUserDto
+		json.Unmarshal(wantResp, &want)
+
+		got, err := client.UserQueryPublic()
+		if err != nil {
+			t.Errorf("failed to call endpoint")
+		}
+
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("+want,-got: %s", diff)
+		}
+	})
+
+	t.Run("UserQuery", func(t *testing.T) {
+		wantResp := []byte(`{
+			"Items": [
+				{
+					"Name": "test",
+					"Id": "100000x00000",
+					"HasConfiguredPassword": true
+				}
+			],
+			"TotalRecordCount": 1
+		}`)
+
+		s.resp = wantResp
+
+		var want *EmbyUserQueryResponse
+		json.Unmarshal(wantResp, &want)
+
+		got, err := client.UserQuery(apiKey)
+		if err != nil {
+			t.Errorf("failed to call endpoint")
+		}
+
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("+want,-got: %s", diff)
+		}
+	})
+
+	t.Run("UserGet", func(t *testing.T) {
+		wantResp := []byte(`{
+			"Name": "test",
+			"Id": "100000x00000",
+			"HasConfiguredPassword": true
+		}`)
+
+		s.resp = wantResp
+
+		var want *EmbyUserDto
+		json.Unmarshal(wantResp, &want)
+
+		got, err := client.UserGet(apiKey, want.Id)
+		if err != nil {
+			t.Errorf("failed to call endpoint")
+		}
+
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("+want,-got: %s", diff)
+		}
+	})
+
+	t.Run("UserUpdate", func(t *testing.T) {
+		user := &EmbyUserDto{Id: "abcd123"}
+		err := client.UserUpdate(apiKey, user.Id, user)
+		if err != nil {
+			t.Errorf("failed to call endpoint")
+		}
+	})
+
+	t.Run("UserNew", func(t *testing.T) {
+		wantResp := []byte(`{
+			"Name": "test",
+			"Id": "100000x00000",
+			"HasConfiguredPassword": true
+		}`)
+
+		s.resp = wantResp
+
+		var want *EmbyUserDto
+		json.Unmarshal(wantResp, &want)
+
+		got, err := client.UserNew(apiKey, want.Name)
+		if err != nil {
+			t.Errorf("failed to call endpoint")
+		}
+
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("+want,-got: %s", diff)
+		}
+	})
+
+	t.Run("UserDelete", func(t *testing.T) {
+		err := client.UserDelete(apiKey, "test123")
+		if err != nil {
+			t.Errorf("failed to call endpoint")
+		}
+	})
+
+	t.Run("UserPassword", func(t *testing.T) {
+		err := client.UserPassword(apiKey, "1000x1000", "", "test123", true)
+		if err != nil {
+			t.Errorf("failed to call endpoint")
+		}
+	})
+
+	t.Run("UserAuth", func(t *testing.T) {
+		wantToken := "12345"
+		wantUserAuthResp := &EmbyUserAuthResponse{
+			AccessToken: wantToken,
+		}
+		wantResp, _ := json.Marshal(wantUserAuthResp)
+
+		s.resp = wantResp
+
+		key, err := client.UserAuth("abcd", "test123")
+		if err != nil {
+			t.Errorf("failed to call endpoint")
+		}
+
+		token := key.ToString()
+
+		if diff := cmp.Diff(wantToken, token); diff != "" {
+			t.Errorf("+want,-got: %s", diff)
+		}
+	})
+
+	t.Run("UserPolicy", func(t *testing.T) {
+		policy := &EmbyUserPolicy{}
+		err := client.UserPolicy(apiKey, "abcd", policy)
+		if err != nil {
+			t.Errorf("failed to call endpoint")
+		}
+	})
+}

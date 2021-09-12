@@ -1,5 +1,10 @@
 package emby
 
+type EmbyUserAuthResponse struct {
+	AccessToken string
+	// Other fields ommitted
+}
+
 type EmbyUserAccessSchedule struct {
 	DayOfWeek string `validate:"oneof=Sunday Monday Tuesday Wednesday Thursday Friday Saturday Everyday Weekday Weekend"`
 	StartHour float64

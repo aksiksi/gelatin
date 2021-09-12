@@ -18,7 +18,7 @@ const (
 	embySystemInfoEndpoint       = "/System/Info"
 	embySystemInfoPublicEndpoint = "/System/Info/Public"
 	embyUserQueryEndpoint        = "/Users/Query"
-	embyUserQueryPublicEndpoint  = "/Users/Query/Public"
+	embyUserQueryPublicEndpoint  = "/Users/Public"
 	embyUserGetEndpoint          = "/Users"
 	embyUserUpdateEndpoint       = "/Users"
 	embyUserNewEndpoint          = "/Users/New"
