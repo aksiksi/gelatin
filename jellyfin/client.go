@@ -71,33 +71,21 @@ func (c *JellyfinApiClient) GetVersion() (string, error) {
 }
 
 func (c *JellyfinApiClient) request(method string, url string, body io.Reader, key gelatin.ApiKey) (*http.Response, error) {
-	req, err := http.NewRequest(method, url, body)
-	if err != nil {
-		return nil, err
+	headers := map[string]string{
+		jellyfinApiKeyAuthHeader: `MediaBrowser Client="gelatin", Device="gelatin", DeviceId="007", Version="0.0.1"`,
 	}
 
-	req.Header.Add(jellyfinApiKeyAuthHeader, `MediaBrowser Client="gelatin", Device="gelatin", DeviceId="007", Version="0.0.1"`)
-
 	if key != nil {
-		req.Header.Add(jellyfinApiKeyTokenHeader, key.ToString())
+		headers[jellyfinApiKeyTokenHeader] = key.ToString()
 	}
 
 	if body != nil {
-		req.Header.Add("Content-Type", "application/json")
+		headers["Content-Type"] = "application/json"
 	}
 
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
+	resp, err := gelatin.HttpRequest(c.client, method, url, body, headers)
 
-	if err := gelatin.HttpStatusToErr(resp.StatusCode); err != nil {
-		body, _ := io.ReadAll(resp.Body)
-		log.Printf("response body: %s", body)
-		return nil, err
-	}
-
-	return resp, nil
+	return resp, err
 }
 
 func (c *JellyfinApiClient) get(url string, key gelatin.ApiKey) (*http.Response, error) {

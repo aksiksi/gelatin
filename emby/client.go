@@ -64,31 +64,21 @@ func NewEmbyApiClient(hostname string, client *http.Client) *EmbyApiClient {
 }
 
 func (c *EmbyApiClient) request(method string, url string, body io.Reader, key gelatin.ApiKey) (*http.Response, error) {
-	req, err := http.NewRequest(method, url, body)
-	if err != nil {
-		return nil, err
+	headers := map[string]string{
+		embyApiKeyAuthHeader: `Emby Client="gelatin", Device="gelatin", DeviceId="007", Version="0.0.1"`,
 	}
 
-	req.Header.Add(embyApiKeyAuthHeader, `Emby Client="gelatin", Device="gelatin", DeviceId="007", Version="0.0.1"`)
-
 	if key != nil {
-		req.Header.Add(embyApiKeyTokenHeader, key.ToString())
+		headers[embyApiKeyTokenHeader] = key.ToString()
 	}
 
 	if body != nil {
-		req.Header.Add("Content-Type", "application/json")
+		headers["Content-Type"] = "application/json"
 	}
 
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
+	resp, err := gelatin.HttpRequest(c.client, method, url, body, headers)
 
-	if err := gelatin.HttpStatusToErr(resp.StatusCode); err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return resp, err
 }
 
 func (c *EmbyApiClient) get(url string, key gelatin.ApiKey) (*http.Response, error) {
