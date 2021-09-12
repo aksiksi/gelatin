@@ -53,6 +53,10 @@ func (c *EmbyApiClient) request(method string, url string, body io.Reader, key a
 		req.Header.Add(embyApiKeyTokenHeader, key.ToString())
 	}
 
+	if body != nil {
+		req.Header.Add("Content-Type", "application/json")
+	}
+
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
@@ -331,6 +335,7 @@ func (c *EmbyApiClient) UserAuth(username, password string) (userKey api.ApiKey,
 
 	type authenticationResult struct {
 		AccessToken string
+		// Other fields ommitted
 	}
 
 	resp := &authenticationResult{}
@@ -341,4 +346,20 @@ func (c *EmbyApiClient) UserAuth(username, password string) (userKey api.ApiKey,
 	}
 
 	return NewApiKey(resp.AccessToken), nil
+}
+
+func (c *EmbyApiClient) UserPolicy(key api.AdminKey, userId string, policy *EmbyUserPolicy) error {
+	url := fmt.Sprintf("%s%s/%s/Policy", c.endpoint, embyUserPolicyEndpoint, userId)
+
+	data, err := json.Marshal(policy)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), key)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

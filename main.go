@@ -76,20 +76,13 @@ func verifyJellyfin() {
 	log.Printf("%v", err)
 
 	// Make the user an admin
-	user, err = client.UserGet(adminKey, user.Id)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	log.Printf("%+v", user.Policy)
-
 	user.Policy.IsAdministrator = true
-
 	err = client.UserPolicy(adminKey, user.Id, &user.Policy)
 	if err != nil {
 		log.Panic(err)
 	}
 
+	// Delete the user
 	err = client.UserDelete(adminKey, user.Id)
 	if err != nil {
 		log.Panic(err)
@@ -141,17 +134,30 @@ func verifyEmby() {
 
 	log.Printf("Users count: %d", len(users.Items))
 
-	// // Create a new user
-	// user, err := client.UserNew(adminKey, "test123")
-	// if err != nil {
-	// 	log.Panicf("failed to create new user: %s", err)
-	// }
+	// Create a new user
+	user, err := client.UserNew(adminKey, "test123")
+	if err != nil {
+		log.Panicf("failed to create new user: %s", err)
+	}
 
-	// log.Printf("User: %v", user)
+	log.Printf("User: %v", user)
 
-	// // Set user password
-	// err = client.UserPassword(adminKey, user.Id, "", "abcd1234", true)
-	// log.Printf("%v", err)
+	// Set user password
+	err = client.UserPassword(adminKey, user.Id, "", "abcd1234", false)
+	log.Printf("%v", err)
+
+	// Make the user an admin
+	user.Policy.IsAdministrator = true
+	err = client.UserPolicy(adminKey, user.Id, &user.Policy)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	// Delete the user
+	err = client.UserDelete(adminKey, user.Id)
+	if err != nil {
+		log.Panic(err)
+	}
 }
 
 func main() {
@@ -169,6 +175,6 @@ func main() {
 		log.Fatal("Emby admin info must be specified")
 	}
 
-	// verifyEmby()
+	verifyEmby()
 	verifyJellyfin()
 }
