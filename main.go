@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/aksiksi/gelatin/api/emby"
-	"github.com/aksiksi/gelatin/api/jellyfin"
+	"github.com/aksiksi/gelatin/emby"
+	"github.com/aksiksi/gelatin/jellyfin"
 )
 
 var (

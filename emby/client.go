@@ -7,7 +7,29 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/aksiksi/gelatin/api"
+	gelatin "github.com/aksiksi/gelatin/lib"
+)
+
+const (
+	embyApiKeyAuthHeader  = "X-Emby-Authorization"
+	embyApiKeyTokenHeader = "X-Emby-Token"
+)
+
+const (
+	embySystemPingEndpoint       = "/System/Ping"
+	embySystemLogsEndpoint       = "/System/Logs"
+	embySystemLogsQueryEndpoint  = "/System/Logs/Query"
+	embySystemInfoEndpoint       = "/System/Info"
+	embySystemInfoPublicEndpoint = "/System/Info/Public"
+	embyUserQueryEndpoint        = "/Users/Query"
+	embyUserQueryPublicEndpoint  = "/Users/Public"
+	embyUserGetEndpoint          = "/Users"
+	embyUserUpdateEndpoint       = "/Users"
+	embyUserNewEndpoint          = "/Users/New"
+	embyUserDeleteEndpoint       = "/Users"
+	embyUserPasswordEndpoint     = "/Users"
+	embyUserAuthEndpoint         = "/Users/AuthenticateByName"
+	embyUserPolicyEndpoint       = "/Users"
 )
 
 type embyApiKey struct {
@@ -15,7 +37,7 @@ type embyApiKey struct {
 }
 
 // NewApiKey returns a new ApiKey for the given client
-func NewApiKey(key string) api.ApiKey {
+func NewApiKey(key string) gelatin.ApiKey {
 	return &embyApiKey{
 		key: key,
 	}
@@ -41,7 +63,7 @@ func NewEmbyApiClient(hostname string, client *http.Client) *EmbyApiClient {
 	}
 }
 
-func (c *EmbyApiClient) request(method string, url string, body io.Reader, key api.ApiKey) (*http.Response, error) {
+func (c *EmbyApiClient) request(method string, url string, body io.Reader, key gelatin.ApiKey) (*http.Response, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
@@ -62,14 +84,14 @@ func (c *EmbyApiClient) request(method string, url string, body io.Reader, key a
 		return nil, err
 	}
 
-	if err := api.HttpStatusToErr(resp.StatusCode); err != nil {
+	if err := gelatin.HttpStatusToErr(resp.StatusCode); err != nil {
 		return nil, err
 	}
 
 	return resp, nil
 }
 
-func (c *EmbyApiClient) get(url string, key api.ApiKey) (*http.Response, error) {
+func (c *EmbyApiClient) get(url string, key gelatin.ApiKey) (*http.Response, error) {
 	resp, err := c.request(http.MethodGet, url, nil, key)
 	if err != nil {
 		return nil, err
@@ -97,7 +119,7 @@ func (c *EmbyApiClient) SystemPing() error {
 	return nil
 }
 
-func (c *EmbyApiClient) SystemLogs(key api.ApiKey, name string) (io.ReadCloser, error) {
+func (c *EmbyApiClient) SystemLogs(key gelatin.ApiKey, name string) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s%s/%s", c.hostname, embySystemLogsEndpoint, name)
 	resp, err := c.get(url, key)
 	if err != nil {
@@ -107,7 +129,7 @@ func (c *EmbyApiClient) SystemLogs(key api.ApiKey, name string) (io.ReadCloser, 
 	return resp.Body, nil
 }
 
-func (c *EmbyApiClient) SystemLogsQuery(key api.ApiKey) (*EmbySystemLogsQueryResponse, error) {
+func (c *EmbyApiClient) SystemLogsQuery(key gelatin.ApiKey) (*EmbySystemLogsQueryResponse, error) {
 	url := fmt.Sprintf("%s%s", c.hostname, embySystemLogsQueryEndpoint)
 	raw, err := c.get(url, key)
 	if err != nil {
@@ -120,15 +142,10 @@ func (c *EmbyApiClient) SystemLogsQuery(key api.ApiKey) (*EmbySystemLogsQueryRes
 		return nil, err
 	}
 
-	err = api.Validator.Struct(resp)
-	if err != nil {
-		return nil, err
-	}
-
 	return resp, nil
 }
 
-func (c *EmbyApiClient) SystemInfo(key api.ApiKey) (*EmbySystemInfoResponse, error) {
+func (c *EmbyApiClient) SystemInfo(key gelatin.ApiKey) (*EmbySystemInfoResponse, error) {
 	url := fmt.Sprintf("%s%s", c.hostname, embySystemInfoEndpoint)
 	raw, err := c.get(url, key)
 	if err != nil {
@@ -138,11 +155,6 @@ func (c *EmbyApiClient) SystemInfo(key api.ApiKey) (*EmbySystemInfoResponse, err
 	resp := &EmbySystemInfoResponse{}
 	dec := json.NewDecoder(raw.Body)
 	if err := dec.Decode(resp); err != nil {
-		return nil, err
-	}
-
-	err = api.Validator.Struct(resp)
-	if err != nil {
 		return nil, err
 	}
 
@@ -181,7 +193,7 @@ func (c *EmbyApiClient) UserQueryPublic() ([]*EmbyUserDto, error) {
 	return resp, nil
 }
 
-func (c *EmbyApiClient) UserQuery(key api.ApiKey) (*EmbyUserQueryResponse, error) {
+func (c *EmbyApiClient) UserQuery(key gelatin.ApiKey) (*EmbyUserQueryResponse, error) {
 	url := fmt.Sprintf("%s%s", c.hostname, embyUserQueryEndpoint)
 	raw, err := c.get(url, key)
 	if err != nil {
@@ -197,7 +209,7 @@ func (c *EmbyApiClient) UserQuery(key api.ApiKey) (*EmbyUserQueryResponse, error
 	return resp, nil
 }
 
-func (c *EmbyApiClient) UserGet(key api.ApiKey, userId string) (*EmbyUserDto, error) {
+func (c *EmbyApiClient) UserGet(key gelatin.ApiKey, userId string) (*EmbyUserDto, error) {
 	url := fmt.Sprintf("%s%s/%s", c.hostname, embyUserGetEndpoint, userId)
 	raw, err := c.get(url, key)
 	if err != nil {
@@ -213,7 +225,7 @@ func (c *EmbyApiClient) UserGet(key api.ApiKey, userId string) (*EmbyUserDto, er
 	return resp, nil
 }
 
-func (c *EmbyApiClient) UserUpdate(key api.ApiKey, userId string, dto *EmbyUserDto) error {
+func (c *EmbyApiClient) UserUpdate(key gelatin.ApiKey, userId string, dto *EmbyUserDto) error {
 	url := fmt.Sprintf("%s%s/%s", c.hostname, embyUserUpdateEndpoint, userId)
 
 	data, err := json.Marshal(dto)
@@ -229,7 +241,7 @@ func (c *EmbyApiClient) UserUpdate(key api.ApiKey, userId string, dto *EmbyUserD
 	return nil
 }
 
-func (c *EmbyApiClient) UserNew(key api.ApiKey, name string) (*EmbyUserDto, error) {
+func (c *EmbyApiClient) UserNew(key gelatin.ApiKey, name string) (*EmbyUserDto, error) {
 	type createUserByName struct {
 		Name string
 	}
@@ -255,7 +267,7 @@ func (c *EmbyApiClient) UserNew(key api.ApiKey, name string) (*EmbyUserDto, erro
 	return resp, nil
 }
 
-func (c *EmbyApiClient) UserDelete(key api.ApiKey, userId string) error {
+func (c *EmbyApiClient) UserDelete(key gelatin.ApiKey, userId string) error {
 	url := fmt.Sprintf("%s%s/%s", c.hostname, embyUserDeleteEndpoint, userId)
 
 	_, err := c.request(http.MethodDelete, url, nil, key)
@@ -266,7 +278,7 @@ func (c *EmbyApiClient) UserDelete(key api.ApiKey, userId string) error {
 	return nil
 }
 
-func (c *EmbyApiClient) ResetUserPassword(key api.ApiKey, userId string) error {
+func (c *EmbyApiClient) ResetUserPassword(key gelatin.ApiKey, userId string) error {
 	type resetUserPassword struct {
 		Id            string
 		ResetPassword bool
@@ -287,7 +299,7 @@ func (c *EmbyApiClient) ResetUserPassword(key api.ApiKey, userId string) error {
 	return nil
 }
 
-func (c *EmbyApiClient) UserPassword(key api.ApiKey, userId, currentPassword, newPassword string, reset bool) error {
+func (c *EmbyApiClient) UserPassword(key gelatin.ApiKey, userId, currentPassword, newPassword string, reset bool) error {
 	type setUserPassword struct {
 		Id        string
 		CurrentPw string
@@ -316,7 +328,7 @@ func (c *EmbyApiClient) UserPassword(key api.ApiKey, userId, currentPassword, ne
 	return nil
 }
 
-func (c *EmbyApiClient) UserAuth(username, password string) (userKey api.ApiKey, err error) {
+func (c *EmbyApiClient) UserAuth(username, password string) (userKey gelatin.ApiKey, err error) {
 	req := map[string]string{
 		"Username": username,
 		"Pw":       password,
@@ -343,7 +355,7 @@ func (c *EmbyApiClient) UserAuth(username, password string) (userKey api.ApiKey,
 	return NewApiKey(resp.AccessToken), nil
 }
 
-func (c *EmbyApiClient) UserPolicy(key api.AdminKey, userId string, policy *EmbyUserPolicy) error {
+func (c *EmbyApiClient) UserPolicy(key gelatin.AdminKey, userId string, policy *EmbyUserPolicy) error {
 	url := fmt.Sprintf("%s%s/%s/Policy", c.hostname, embyUserPolicyEndpoint, userId)
 
 	data, err := json.Marshal(policy)

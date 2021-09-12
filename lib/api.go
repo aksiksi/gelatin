@@ -1,16 +1,11 @@
-package api
+package gelatin
 
 import (
 	"errors"
 	"net/http"
-
-	"github.com/go-playground/validator/v10"
 )
 
-var Validator *validator.Validate = validator.New()
-
 type ApiKey interface {
-	// String representation of the key for use in a header
 	ToString() string
 }
 

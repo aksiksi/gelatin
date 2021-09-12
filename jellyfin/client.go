@@ -8,7 +8,30 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/aksiksi/gelatin/api"
+	gelatin "github.com/aksiksi/gelatin/lib"
+)
+
+const (
+	// See: https://github.com/jellyfin/jellyfin/blob/8c463b9b8196530e6d417b40ed81825422cada32/Jellyfin.Server.Implementations/Security/AuthorizationContext.cs#L80
+	jellyfinApiKeyAuthHeader  = "X-Emby-Authorization"
+	jellyfinApiKeyTokenHeader = "X-Emby-Token"
+)
+
+const (
+	jellyfinSystemPingEndpoint       = "/System/Ping"
+	jellyfinSystemLogsEndpoint       = "/System/Logs"
+	jellyfinSystemLogsNameEndpoint   = "/System/Logs/Log"
+	jellyfinSystemInfoEndpoint       = "/System/Info"
+	jellyfinSystemInfoPublicEndpoint = "/System/Info/Public"
+	jellyfinUserQueryEndpoint        = "/users"
+	jellyfinUserQueryPublicEndpoint  = "/users/public"
+	jellyfinUserGetEndpoint          = "/users"
+	jellyfinUserUpdateEndpoint       = "/users"
+	jellyfinUserNewEndpoint          = "/users/new"
+	jellyfinUserDeleteEndpoint       = "/users"
+	jellyfinUserPasswordEndpoint     = "/Users"
+	jellyfinUserAuthEndpoint         = "/Users/AuthenticateByName"
+	jellyfinUserPolicyEndpoint       = "/Users"
 )
 
 type jellyfinApiKey struct {
@@ -16,7 +39,7 @@ type jellyfinApiKey struct {
 }
 
 // NewApiKey returns a new ApiKey for the given client
-func NewApiKey(key string) api.ApiKey {
+func NewApiKey(key string) gelatin.ApiKey {
 	return &jellyfinApiKey{
 		key: key,
 	}
@@ -47,7 +70,7 @@ func (c *JellyfinApiClient) GetVersion() (string, error) {
 	return resp.Version, nil
 }
 
-func (c *JellyfinApiClient) request(method string, url string, body io.Reader, key api.ApiKey) (*http.Response, error) {
+func (c *JellyfinApiClient) request(method string, url string, body io.Reader, key gelatin.ApiKey) (*http.Response, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
@@ -68,7 +91,7 @@ func (c *JellyfinApiClient) request(method string, url string, body io.Reader, k
 		return nil, err
 	}
 
-	if err := api.HttpStatusToErr(resp.StatusCode); err != nil {
+	if err := gelatin.HttpStatusToErr(resp.StatusCode); err != nil {
 		body, _ := io.ReadAll(resp.Body)
 		log.Printf("response body: %s", body)
 		return nil, err
@@ -77,7 +100,7 @@ func (c *JellyfinApiClient) request(method string, url string, body io.Reader, k
 	return resp, nil
 }
 
-func (c *JellyfinApiClient) get(url string, key api.ApiKey) (*http.Response, error) {
+func (c *JellyfinApiClient) get(url string, key gelatin.ApiKey) (*http.Response, error) {
 	resp, err := c.request(http.MethodGet, url, nil, key)
 	if err != nil {
 		return nil, err
@@ -96,7 +119,7 @@ func (c *JellyfinApiClient) SystemPing() error {
 	return nil
 }
 
-func (c *JellyfinApiClient) SystemLogsName(key api.ApiKey, name string) (io.ReadCloser, error) {
+func (c *JellyfinApiClient) SystemLogsName(key gelatin.ApiKey, name string) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s%s?name=%s", c.hostname, jellyfinSystemLogsNameEndpoint, name)
 
 	resp, err := c.get(url, key)
@@ -107,7 +130,7 @@ func (c *JellyfinApiClient) SystemLogsName(key api.ApiKey, name string) (io.Read
 	return resp.Body, nil
 }
 
-func (c *JellyfinApiClient) SystemLogs(key api.ApiKey) ([]JellyfinSystemLogFile, error) {
+func (c *JellyfinApiClient) SystemLogs(key gelatin.ApiKey) ([]JellyfinSystemLogFile, error) {
 	url := fmt.Sprintf("%s%s", c.hostname, jellyfinSystemLogsEndpoint)
 	raw, err := c.get(url, key)
 	if err != nil {
@@ -123,7 +146,7 @@ func (c *JellyfinApiClient) SystemLogs(key api.ApiKey) ([]JellyfinSystemLogFile,
 	return resp, nil
 }
 
-func (c *JellyfinApiClient) SystemInfo(key api.ApiKey) (*JellyfinSystemInfoResponse, error) {
+func (c *JellyfinApiClient) SystemInfo(key gelatin.ApiKey) (*JellyfinSystemInfoResponse, error) {
 	url := fmt.Sprintf("%s%s", c.hostname, jellyfinSystemInfoEndpoint)
 	raw, err := c.get(url, key)
 	if err != nil {
@@ -133,11 +156,6 @@ func (c *JellyfinApiClient) SystemInfo(key api.ApiKey) (*JellyfinSystemInfoRespo
 	resp := &JellyfinSystemInfoResponse{}
 	dec := json.NewDecoder(raw.Body)
 	if err := dec.Decode(resp); err != nil {
-		return nil, err
-	}
-
-	err = api.Validator.Struct(resp)
-	if err != nil {
 		return nil, err
 	}
 
@@ -176,7 +194,7 @@ func (c *JellyfinApiClient) UserQueryPublic() ([]*JellyfinUserDto, error) {
 	return resp, nil
 }
 
-func (c *JellyfinApiClient) UserQuery(key api.ApiKey) ([]*JellyfinUserDto, error) {
+func (c *JellyfinApiClient) UserQuery(key gelatin.ApiKey) ([]*JellyfinUserDto, error) {
 	url := fmt.Sprintf("%s%s", c.hostname, jellyfinUserQueryEndpoint)
 	raw, err := c.get(url, key)
 	if err != nil {
@@ -192,7 +210,7 @@ func (c *JellyfinApiClient) UserQuery(key api.ApiKey) ([]*JellyfinUserDto, error
 	return resp, nil
 }
 
-func (c *JellyfinApiClient) UserGet(key api.ApiKey, userId string) (*JellyfinUserDto, error) {
+func (c *JellyfinApiClient) UserGet(key gelatin.ApiKey, userId string) (*JellyfinUserDto, error) {
 	url := fmt.Sprintf("%s%s/%s", c.hostname, jellyfinUserGetEndpoint, userId)
 	raw, err := c.get(url, key)
 	if err != nil {
@@ -208,7 +226,7 @@ func (c *JellyfinApiClient) UserGet(key api.ApiKey, userId string) (*JellyfinUse
 	return resp, nil
 }
 
-func (c *JellyfinApiClient) UserUpdate(key api.AdminKey, userId string, dto *JellyfinUserDto) error {
+func (c *JellyfinApiClient) UserUpdate(key gelatin.AdminKey, userId string, dto *JellyfinUserDto) error {
 	url := fmt.Sprintf("%s%s/%s", c.hostname, jellyfinUserUpdateEndpoint, userId)
 
 	data, err := json.Marshal(dto)
@@ -224,7 +242,7 @@ func (c *JellyfinApiClient) UserUpdate(key api.AdminKey, userId string, dto *Jel
 	return nil
 }
 
-func (c *JellyfinApiClient) UserNew(key api.ApiKey, name string) (*JellyfinUserDto, error) {
+func (c *JellyfinApiClient) UserNew(key gelatin.ApiKey, name string) (*JellyfinUserDto, error) {
 	type createUserByName struct {
 		Name string
 	}
@@ -250,7 +268,7 @@ func (c *JellyfinApiClient) UserNew(key api.ApiKey, name string) (*JellyfinUserD
 	return resp, nil
 }
 
-func (c *JellyfinApiClient) UserDelete(key api.ApiKey, userId string) error {
+func (c *JellyfinApiClient) UserDelete(key gelatin.ApiKey, userId string) error {
 	url := fmt.Sprintf("%s%s/%s", c.hostname, jellyfinUserDeleteEndpoint, userId)
 
 	_, err := c.request(http.MethodDelete, url, nil, key)
@@ -261,7 +279,7 @@ func (c *JellyfinApiClient) UserDelete(key api.ApiKey, userId string) error {
 	return nil
 }
 
-func (c *JellyfinApiClient) ResetUserPassword(key api.AdminKey, userId string) error {
+func (c *JellyfinApiClient) ResetUserPassword(key gelatin.AdminKey, userId string) error {
 	type resetUserPassword struct {
 		Id            string
 		ResetPassword bool
@@ -282,7 +300,7 @@ func (c *JellyfinApiClient) ResetUserPassword(key api.AdminKey, userId string) e
 	return nil
 }
 
-func (c *JellyfinApiClient) UserPassword(key api.AdminKey, userId, currentPassword, newPassword string, reset bool) error {
+func (c *JellyfinApiClient) UserPassword(key gelatin.AdminKey, userId, currentPassword, newPassword string, reset bool) error {
 	type setUserPassword struct {
 		Id        string
 		CurrentPw string
@@ -323,7 +341,7 @@ func (c *JellyfinApiClient) UserPassword(key api.AdminKey, userId, currentPasswo
 	return nil
 }
 
-func (c *JellyfinApiClient) UserAuth(username, password string) (userKey api.ApiKey, err error) {
+func (c *JellyfinApiClient) UserAuth(username, password string) (userKey gelatin.ApiKey, err error) {
 	req := map[string]string{
 		"Username": username,
 		"Pw":       password,
@@ -354,7 +372,7 @@ func (c *JellyfinApiClient) UserAuth(username, password string) (userKey api.Api
 	return NewApiKey(resp.AccessToken), nil
 }
 
-func (c *JellyfinApiClient) UserPolicy(key api.AdminKey, userId string, policy *JellyfinUserPolicy) error {
+func (c *JellyfinApiClient) UserPolicy(key gelatin.AdminKey, userId string, policy *JellyfinUserPolicy) error {
 	url := fmt.Sprintf("%s%s/%s/Policy", c.hostname, jellyfinUserPolicyEndpoint, userId)
 
 	data, err := json.Marshal(policy)
