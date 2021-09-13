@@ -47,7 +47,7 @@ func setUp(t *testing.T) (*EmbyApiClient, *httptest.Server, *mockEmbyServer) {
 
 	s := &mockEmbyServer{}
 	srv := httptest.NewServer(s)
-	client := NewEmbyApiClient(srv.URL, srv.Client())
+	client := NewEmbyApiClient(srv.URL)
 
 	return client, srv, s
 }

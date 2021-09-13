@@ -4,8 +4,6 @@ import (
 	"flag"
 	"io"
 	"log"
-	"net/http"
-	"time"
 
 	"github.com/aksiksi/gelatin/emby"
 	"github.com/aksiksi/gelatin/jellyfin"
@@ -19,10 +17,9 @@ var (
 )
 
 func verifyJellyfin() {
-	httpClient := &http.Client{Timeout: 10 * time.Second}
-	client := jellyfin.NewJellyfinApiClient("http://192.168.0.99:8097", httpClient)
+	client := jellyfin.NewJellyfinApiClient("http://192.168.0.99:8097")
 
-	if err := client.Ping(); err != nil {
+	if err := client.System().Ping(); err != nil {
 		log.Panicf("failed to ping: %s", err)
 	}
 
@@ -96,8 +93,7 @@ func verifyJellyfin() {
 }
 
 func verifyEmby() {
-	httpClient := &http.Client{Timeout: 10 * time.Second}
-	client := emby.NewEmbyApiClient("http://192.168.0.99:8096", httpClient)
+	client := emby.NewEmbyApiClient("http://192.168.0.99:8096")
 
 	if err := client.System().Ping(); err != nil {
 		log.Panicf("failed to ping: %s", err)

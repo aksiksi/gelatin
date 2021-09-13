@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	gelatin "github.com/aksiksi/gelatin/lib"
 )
@@ -56,9 +57,11 @@ type EmbyApiClient struct {
 	hostname string
 }
 
-func NewEmbyApiClient(hostname string, client *http.Client) *EmbyApiClient {
+func NewEmbyApiClient(hostname string) *EmbyApiClient {
 	return &EmbyApiClient{
-		client:   client,
+		client: &http.Client{
+			Timeout: 10 * time.Second,
+		},
 		hostname: fmt.Sprintf("%s/emby", hostname),
 	}
 }

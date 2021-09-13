@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	gelatin "github.com/aksiksi/gelatin/lib"
 )
@@ -53,9 +54,11 @@ type JellyfinApiClient struct {
 	hostname string
 }
 
-func NewJellyfinApiClient(hostname string, client *http.Client) *JellyfinApiClient {
+func NewJellyfinApiClient(hostname string) *JellyfinApiClient {
 	return &JellyfinApiClient{
-		client:   client,
+		client: &http.Client{
+			Timeout: 10 * time.Second,
+		},
 		hostname: hostname,
 	}
 }

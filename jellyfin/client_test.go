@@ -47,7 +47,7 @@ func setUp(t *testing.T) (*JellyfinApiClient, *httptest.Server, *mockJellyfinSer
 
 	s := &mockJellyfinServer{}
 	srv := httptest.NewServer(s)
-	client := NewJellyfinApiClient(srv.URL, srv.Client())
+	client := NewJellyfinApiClient(srv.URL)
 
 	return client, srv, s
 }
