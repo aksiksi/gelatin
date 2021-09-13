@@ -22,23 +22,23 @@ func verifyJellyfin() {
 	httpClient := &http.Client{Timeout: 10 * time.Second}
 	client := jellyfin.NewJellyfinApiClient("http://192.168.0.99:8097", httpClient)
 
-	if err := client.SystemPing(); err != nil {
+	if err := client.Ping(); err != nil {
 		log.Panicf("failed to ping: %s", err)
 	}
 
-	adminKey, err := client.UserAuth(jellyfinAdminUser, jellyfinAdminPass)
+	adminKey, err := client.User().Authenticate(jellyfinAdminUser, jellyfinAdminPass)
 	if err != nil {
 		log.Panicf("failed to authenticate")
 	}
 
-	systemInfo, err := client.SystemInfoPublic()
+	systemInfo, err := client.System().Info(nil, true)
 	if err != nil {
 		log.Panicf("failed to get system info: %s", err)
 	}
 
 	log.Printf("Jellyfin info: %+v", systemInfo)
 
-	logsInfo, err := client.SystemLogs(adminKey)
+	logsInfo, err := client.System().GetLogs(adminKey)
 	if err != nil {
 		log.Panicf("failed to get system logs: %s", err)
 	}
@@ -46,7 +46,7 @@ func verifyJellyfin() {
 	log.Printf("Jellyfin logs: %+v", logsInfo)
 
 	logName, logSize := logsInfo[0].Name, logsInfo[0].Size
-	data, err := client.SystemLogsName(adminKey, logName)
+	data, err := client.System().GetLogFile(adminKey, logName)
 	if err != nil {
 		log.Panicf("failed to get system log %s: %s", logName, err)
 	}
@@ -56,13 +56,13 @@ func verifyJellyfin() {
 	log.Printf("got log %s, size = %d, expected = %d", logName, len(logData), logSize)
 
 	// Query public users
-	_, err = client.UserQueryPublic()
+	_, err = client.User().GetUsers(nil, true)
 	if err != nil {
 		log.Panicf("failed to query users: %s", err)
 	}
 
 	// Query available users
-	users, err := client.UserQuery(adminKey)
+	users, err := client.User().GetUsers(adminKey, false)
 	if err != nil {
 		log.Panicf("failed to query users: %s", err)
 	}
@@ -70,7 +70,7 @@ func verifyJellyfin() {
 	log.Printf("Users count: %d", len(users))
 
 	// Create a new user
-	user, err := client.UserNew(adminKey, "test123")
+	user, err := client.User().NewUser(adminKey, "test123")
 	if err != nil {
 		log.Panicf("failed to create new user: %s", err)
 	}
@@ -78,18 +78,18 @@ func verifyJellyfin() {
 	log.Printf("User: %v", user)
 
 	// Set user password
-	err = client.UserPassword(adminKey, user.Id, "", "abcd1234", false)
+	err = client.User().UpdatePassword(adminKey, user.Id, "", "abcd1234", false)
 	log.Printf("%v", err)
 
 	// Make the user an admin
 	user.Policy.IsAdministrator = true
-	err = client.UserPolicy(adminKey, user.Id, &user.Policy)
+	err = client.User().UpdatePolicy(adminKey, user.Id, &user.Policy)
 	if err != nil {
 		log.Panic(err)
 	}
 
 	// Delete the user
-	err = client.UserDelete(adminKey, user.Id)
+	err = client.User().DeleteUser(adminKey, user.Id)
 	if err != nil {
 		log.Panic(err)
 	}

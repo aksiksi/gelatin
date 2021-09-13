@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
+	gelatin "github.com/aksiksi/gelatin/lib"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -26,6 +28,18 @@ func (s *mockJellyfinServer) ServeHTTP(resp http.ResponseWriter, req *http.Reque
 	resp.WriteHeader(s.status)
 	resp.Header().Add("Content-Type", "application/json")
 	resp.Write(s.resp)
+}
+
+func readTestFile(t *testing.T) []byte {
+	t.Helper()
+	testName := strings.ReplaceAll(t.Name(), "/", "_")
+	path := fmt.Sprintf("testdata/%s.json", testName)
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatalf("failed to open test file: %s", path)
+	}
+	data, _ := io.ReadAll(f)
+	return data
 }
 
 func setUp(t *testing.T) (*JellyfinApiClient, *httptest.Server, *mockJellyfinServer) {
@@ -47,7 +61,7 @@ func TestJellyfinSystemEndpoints(t *testing.T) {
 	s.status = http.StatusOK
 
 	t.Run("SystemPing", func(t *testing.T) {
-		err := client.SystemPing()
+		err := client.Ping()
 		if err != nil {
 			t.Errorf("failed to call ping endpoint")
 		}
@@ -62,10 +76,10 @@ func TestJellyfinSystemEndpoints(t *testing.T) {
 
 		s.resp = wantResp
 
-		want := &JellyfinSystemInfoPublicResponse{}
+		want := &gelatin.GelatinSystemInfo{}
 		json.Unmarshal(wantResp, want)
 
-		got, err := client.SystemInfoPublic()
+		got, err := client.Info(nil, true)
 		if err != nil {
 			t.Errorf("failed to call SystemInfoPublic endpoint")
 		}
@@ -86,7 +100,7 @@ func TestJellyfinSystemEndpoints(t *testing.T) {
 		want := &JellyfinSystemInfoPublicResponse{}
 		json.Unmarshal(wantResp, want)
 
-		version, err := client.GetVersion()
+		version, err := client.Version()
 		if err != nil {
 			t.Errorf("failed to call GetVersion")
 		}
@@ -100,7 +114,7 @@ func TestJellyfinSystemEndpoints(t *testing.T) {
 		wantResp := []byte("this is a log file")
 		s.resp = wantResp
 
-		logReader, err := client.SystemLogsName(apiKey, "test")
+		logReader, err := client.GetLogFile(apiKey, "test")
 		if err != nil {
 			t.Errorf("failed to call SystemLogs")
 		}
@@ -113,19 +127,14 @@ func TestJellyfinSystemEndpoints(t *testing.T) {
 	})
 
 	t.Run("SystemLogs", func(t *testing.T) {
-		path := fmt.Sprintf("testdata/%s_valid.json", t.Name())
-		f, err := os.Open(path)
-		if err != nil {
-			t.Fatalf("failed to open test file: %s", path)
-		}
-		data, _ := io.ReadAll(f)
+		data := readTestFile(t)
 
 		s.resp = data
 
-		var want []JellyfinSystemLogFile
+		var want []gelatin.GelatinSystemLog
 		json.Unmarshal(data, &want)
 
-		got, err := client.SystemLogs(apiKey)
+		got, err := client.GetLogs(apiKey)
 		if err != nil {
 			t.Errorf("failed to call SystemLogsQuery")
 		}

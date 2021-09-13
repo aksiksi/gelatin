@@ -64,6 +64,7 @@ type GelatinUserPolicy struct {
 	BlockedChannels                  []string
 	RemoteClientBitrateLimit         int32
 	AuthenticationProviderId         string
+	PasswordResetProviderId          string // Jellyfin only
 	ExcludedSubFolders               []string
 	SimultaneousStreamLimit          int32
 	EnabledDevices                   []string
