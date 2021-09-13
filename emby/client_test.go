@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
+	gelatin "github.com/aksiksi/gelatin/lib"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -26,6 +28,18 @@ func (s *mockEmbyServer) ServeHTTP(resp http.ResponseWriter, req *http.Request) 
 	resp.WriteHeader(s.status)
 	resp.Header().Add("Content-Type", "application/json")
 	resp.Write(s.resp)
+}
+
+func readTestFile(t *testing.T) []byte {
+	t.Helper()
+	testName := strings.ReplaceAll(t.Name(), "/", "_")
+	path := fmt.Sprintf("testdata/%s.json", testName)
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatalf("failed to open test file: %s", path)
+	}
+	data, _ := io.ReadAll(f)
+	return data
 }
 
 func setUp(t *testing.T) (*EmbyApiClient, *httptest.Server, *mockEmbyServer) {
@@ -46,14 +60,14 @@ func TestEmbySystemEndpoints(t *testing.T) {
 
 	s.status = http.StatusOK
 
-	t.Run("SystemPing", func(t *testing.T) {
-		err := client.SystemPing()
+	t.Run("Ping", func(t *testing.T) {
+		err := client.Ping()
 		if err != nil {
 			t.Errorf("failed to call ping endpoint")
 		}
 	})
 
-	t.Run("SystemInfoPublic", func(t *testing.T) {
+	t.Run("Info_public", func(t *testing.T) {
 		wantResp := []byte(`{
 			"ServerName": "abc",
 			"Version": "4.6.4.0",
@@ -62,20 +76,20 @@ func TestEmbySystemEndpoints(t *testing.T) {
 
 		s.resp = wantResp
 
-		want := &EmbySystemInfoPublicResponse{}
+		want := &gelatin.GelatinSystemInfo{}
 		json.Unmarshal(wantResp, want)
 
-		got, err := client.SystemInfoPublic()
+		got, err := client.Info(nil, true)
 		if err != nil {
 			t.Errorf("failed to call SystemInfoPublic endpoint")
 		}
 
 		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("+want,-got: %s", diff)
+			t.Errorf("-want,+got: %s", diff)
 		}
 	})
 
-	t.Run("GetVersion", func(t *testing.T) {
+	t.Run("Version", func(t *testing.T) {
 		wantResp := []byte(`{
 			"ServerName": "abc",
 			"Version": "4.6.4.0",
@@ -83,10 +97,10 @@ func TestEmbySystemEndpoints(t *testing.T) {
 		}`)
 		s.resp = wantResp
 
-		want := &EmbySystemInfoPublicResponse{}
+		want := &gelatin.GelatinSystemInfo{}
 		json.Unmarshal(wantResp, want)
 
-		version, err := client.GetVersion()
+		version, err := client.Version()
 		if err != nil {
 			t.Errorf("failed to call GetVersion")
 		}
@@ -96,11 +110,11 @@ func TestEmbySystemEndpoints(t *testing.T) {
 		}
 	})
 
-	t.Run("SystemLogs", func(t *testing.T) {
+	t.Run("GetLogFile", func(t *testing.T) {
 		wantResp := []byte("this is a log file")
 		s.resp = wantResp
 
-		logReader, err := client.SystemLogs(apiKey, "test")
+		logReader, err := client.GetLogFile(apiKey, "test")
 		if err != nil {
 			t.Errorf("failed to call SystemLogs")
 		}
@@ -108,30 +122,24 @@ func TestEmbySystemEndpoints(t *testing.T) {
 
 		want, got := string(wantResp), string(logData)
 		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("+want,-got:%s", diff)
+			t.Errorf("-want,+got:%s", diff)
 		}
 	})
 
-	t.Run("SystemLogsQuery", func(t *testing.T) {
-		path := fmt.Sprintf("testdata/%s_valid.json", t.Name())
-		f, err := os.Open(path)
-		if err != nil {
-			t.Fatalf("failed to open test file: %s", path)
-		}
-		data, _ := io.ReadAll(f)
-
+	t.Run("GetLogs", func(t *testing.T) {
+		data := readTestFile(t)
 		s.resp = data
 
 		want := &EmbySystemLogsQueryResponse{}
 		json.Unmarshal(data, want)
 
-		got, err := client.SystemLogsQuery(apiKey)
+		got, err := client.GetLogs(apiKey)
 		if err != nil {
 			t.Errorf("failed to call SystemLogsQuery")
 		}
 
-		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("+want,-got:%s", diff)
+		if diff := cmp.Diff(want.Items, got); diff != "" {
+			t.Errorf("-want,+got:%s", diff)
 		}
 	})
 }
@@ -144,7 +152,7 @@ func TestEmbyUserEndpoints(t *testing.T) {
 
 	s.status = http.StatusOK
 
-	t.Run("UserQueryPublic", func(t *testing.T) {
+	t.Run("GetUsers_public", func(t *testing.T) {
 		wantResp := []byte(`[
 			{
 				"Name": "test",
@@ -155,20 +163,20 @@ func TestEmbyUserEndpoints(t *testing.T) {
 
 		s.resp = wantResp
 
-		var want []*EmbyUserDto
+		var want []gelatin.GelatinUser
 		json.Unmarshal(wantResp, &want)
 
-		got, err := client.UserQueryPublic()
+		got, err := client.GetUsers(nil, true)
 		if err != nil {
 			t.Errorf("failed to call endpoint")
 		}
 
 		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("+want,-got: %s", diff)
+			t.Errorf("-want,+got: %s", diff)
 		}
 	})
 
-	t.Run("UserQuery", func(t *testing.T) {
+	t.Run("GetUsers", func(t *testing.T) {
 		wantResp := []byte(`{
 			"Items": [
 				{
@@ -185,17 +193,17 @@ func TestEmbyUserEndpoints(t *testing.T) {
 		var want *EmbyUserQueryResponse
 		json.Unmarshal(wantResp, &want)
 
-		got, err := client.UserQuery(apiKey)
+		got, err := client.GetUsers(apiKey, false)
 		if err != nil {
 			t.Errorf("failed to call endpoint")
 		}
 
-		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("+want,-got: %s", diff)
+		if diff := cmp.Diff(want.Items, got); diff != "" {
+			t.Errorf("-want,+got: %s", diff)
 		}
 	})
 
-	t.Run("UserGet", func(t *testing.T) {
+	t.Run("GetUser", func(t *testing.T) {
 		wantResp := []byte(`{
 			"Name": "test",
 			"Id": "100000x00000",
@@ -204,22 +212,22 @@ func TestEmbyUserEndpoints(t *testing.T) {
 
 		s.resp = wantResp
 
-		var want *EmbyUserDto
+		var want *gelatin.GelatinUser
 		json.Unmarshal(wantResp, &want)
 
-		got, err := client.UserGet(apiKey, want.Id)
+		got, err := client.GetUser(apiKey, want.Id)
 		if err != nil {
 			t.Errorf("failed to call endpoint")
 		}
 
 		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("+want,-got: %s", diff)
+			t.Errorf("-want,+got: %s", diff)
 		}
 	})
 
 	t.Run("UserUpdate", func(t *testing.T) {
-		user := &EmbyUserDto{Id: "abcd123"}
-		err := client.UserUpdate(apiKey, user.Id, user)
+		user := &gelatin.GelatinUser{Id: "abcd123"}
+		err := client.UpdateUser(apiKey, user.Id, user)
 		if err != nil {
 			t.Errorf("failed to call endpoint")
 		}
@@ -234,28 +242,28 @@ func TestEmbyUserEndpoints(t *testing.T) {
 
 		s.resp = wantResp
 
-		var want *EmbyUserDto
+		var want *gelatin.GelatinUser
 		json.Unmarshal(wantResp, &want)
 
-		got, err := client.UserNew(apiKey, want.Name)
+		got, err := client.NewUser(apiKey, want.Name)
 		if err != nil {
 			t.Errorf("failed to call endpoint")
 		}
 
 		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("+want,-got: %s", diff)
+			t.Errorf("-want,+got: %s", diff)
 		}
 	})
 
 	t.Run("UserDelete", func(t *testing.T) {
-		err := client.UserDelete(apiKey, "test123")
+		err := client.DeleteUser(apiKey, "test123")
 		if err != nil {
 			t.Errorf("failed to call endpoint")
 		}
 	})
 
 	t.Run("UserPassword", func(t *testing.T) {
-		err := client.UserPassword(apiKey, "1000x1000", "", "test123", true)
+		err := client.UpdatePassword(apiKey, "1000x1000", "", "test123", true)
 		if err != nil {
 			t.Errorf("failed to call endpoint")
 		}
@@ -270,7 +278,7 @@ func TestEmbyUserEndpoints(t *testing.T) {
 
 		s.resp = wantResp
 
-		key, err := client.UserAuth("abcd", "test123")
+		key, err := client.Authenticate("abcd", "test123")
 		if err != nil {
 			t.Errorf("failed to call endpoint")
 		}
@@ -278,13 +286,13 @@ func TestEmbyUserEndpoints(t *testing.T) {
 		token := key.ToString()
 
 		if diff := cmp.Diff(wantToken, token); diff != "" {
-			t.Errorf("+want,-got: %s", diff)
+			t.Errorf("-want,+got: %s", diff)
 		}
 	})
 
 	t.Run("UserPolicy", func(t *testing.T) {
-		policy := &EmbyUserPolicy{}
-		err := client.UserPolicy(apiKey, "abcd", policy)
+		policy := &gelatin.GelatinUserPolicy{}
+		err := client.UpdatePolicy(apiKey, "abcd", policy)
 		if err != nil {
 			t.Errorf("failed to call endpoint")
 		}

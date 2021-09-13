@@ -1,5 +1,7 @@
 package emby
 
+import gelatin "github.com/aksiksi/gelatin/lib"
+
 type EmbyUserAuthResponse struct {
 	AccessToken string
 	// Other fields ommitted
@@ -91,7 +93,7 @@ type EmbyUserDto struct {
 }
 
 type EmbyUserQueryResponse struct {
-	Items            []*EmbyUserDto
+	Items            []gelatin.GelatinUser
 	TotalRecordCount int32
 }
 
@@ -103,7 +105,7 @@ type EmbySystemLogFile struct {
 }
 
 type EmbySystemLogsQueryResponse struct {
-	Items            []EmbySystemLogFile
+	Items            []gelatin.GelatinSystemLog
 	TotalRecordCount int32
 }
 

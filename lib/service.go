@@ -6,18 +6,18 @@ import (
 
 type GelatinSystemLog struct {
 	Name         string
-	Size         int
+	Size         int64
 	DateCreated  string
 	DateModified string
 }
 
 type GelatinSystemInfo struct {
+	Id              string
 	LocalAddress    string
 	WanAddress      string
 	ServerName      string
 	Version         string
 	OperatingSystem string
-	Id              string
 }
 
 type GelatinUserAccessSchedule struct {
@@ -90,8 +90,6 @@ type GelatinUser struct {
 	Name                      string
 	ServerId                  string
 	ServerName                string
-	ConnectUserName           string
-	ConnectLinkType           string `validate:"oneof=LinkedUser Guest"`
 	Id                        string `validate:"uuid"`
 	PrimaryImageTag           string
 	HasPassword               bool
@@ -106,16 +104,16 @@ type GelatinUser struct {
 }
 
 type GelatinSystemService interface {
+	Version() (string, error)
 	Ping() error
 	GetLogs(key ApiKey) ([]GelatinSystemLog, error)
 	GetLogFile(key ApiKey, name string) (io.ReadCloser, error)
-	Info(key ApiKey) (*GelatinSystemInfo, error)
-	Version() (string, error)
+	Info(key ApiKey, public bool) (*GelatinSystemInfo, error)
 }
 
 type GelatinUserService interface {
-	GetUsers(key ApiKey, public bool) ([]GelatinUser, error)
 	GetUser(key ApiKey, id string) (*GelatinUser, error)
+	GetUsers(key ApiKey, public bool) ([]GelatinUser, error)
 	UpdateUser(key AdminKey, id string, data *GelatinUser) error
 	NewUser(key AdminKey, name string) (*GelatinUser, error)
 	DeleteUser(key AdminKey, id string) error

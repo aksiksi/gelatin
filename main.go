@@ -99,31 +99,31 @@ func verifyEmby() {
 	httpClient := &http.Client{Timeout: 10 * time.Second}
 	client := emby.NewEmbyApiClient("http://192.168.0.99:8096", httpClient)
 
-	if err := client.SystemPing(); err != nil {
+	if err := client.System().Ping(); err != nil {
 		log.Panicf("failed to ping: %s", err)
 	}
 
-	adminKey, err := client.UserAuth(embyAdminUser, embyAdminPass)
+	adminKey, err := client.User().Authenticate(embyAdminUser, embyAdminPass)
 	if err != nil {
 		log.Panicf("failed to authenticate")
 	}
 
-	resp, err := client.SystemInfoPublic()
+	resp, err := client.System().Info(nil, true)
 	if err != nil {
 		log.Panicf("failed to get system info: %s", err)
 	}
 
 	log.Printf("Emby info: %+v", resp)
 
-	logsInfo, err := client.SystemLogsQuery(adminKey)
+	logsInfo, err := client.System().GetLogs(adminKey)
 	if err != nil {
 		log.Panicf("failed to get system logs: %s", err)
 	}
 
 	log.Printf("Emby logs: %+v", logsInfo)
 
-	logName, logSize := logsInfo.Items[0].Name, logsInfo.Items[0].Size
-	data, err := client.SystemLogs(adminKey, logName)
+	logName, logSize := logsInfo[0].Name, logsInfo[0].Size
+	data, err := client.System().GetLogFile(adminKey, logName)
 	if err != nil {
 		log.Panicf("failed to get system log %s: %s", logName, err)
 	}
@@ -133,21 +133,21 @@ func verifyEmby() {
 	log.Printf("got log %s, size = %d, expected = %d", logName, len(logData), logSize)
 
 	// Query public users
-	_, err = client.UserQueryPublic()
+	_, err = client.User().GetUsers(nil, true)
 	if err != nil {
 		log.Panicf("failed to query users: %s", err)
 	}
 
 	// Query available users
-	users, err := client.UserQuery(adminKey)
+	users, err := client.User().GetUsers(adminKey, false)
 	if err != nil {
 		log.Panicf("failed to query users: %s", err)
 	}
 
-	log.Printf("Users count: %d", len(users.Items))
+	log.Printf("Users count: %d", len(users))
 
 	// Create a new user
-	user, err := client.UserNew(adminKey, "test123")
+	user, err := client.User().NewUser(adminKey, "test123")
 	if err != nil {
 		log.Panicf("failed to create new user: %s", err)
 	}
@@ -155,18 +155,18 @@ func verifyEmby() {
 	log.Printf("User: %v", user)
 
 	// Set user password
-	err = client.UserPassword(adminKey, user.Id, "", "abcd1234", false)
+	err = client.User().UpdatePassword(adminKey, user.Id, "", "abcd1234", false)
 	log.Printf("%v", err)
 
 	// Make the user an admin
 	user.Policy.IsAdministrator = true
-	err = client.UserPolicy(adminKey, user.Id, &user.Policy)
+	err = client.User().UpdatePolicy(adminKey, user.Id, &user.Policy)
 	if err != nil {
 		log.Panic(err)
 	}
 
 	// Delete the user
-	err = client.UserDelete(adminKey, user.Id)
+	err = client.User().DeleteUser(adminKey, user.Id)
 	if err != nil {
 		log.Panic(err)
 	}
