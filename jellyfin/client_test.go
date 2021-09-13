@@ -144,3 +144,149 @@ func TestJellyfinSystemEndpoints(t *testing.T) {
 		}
 	})
 }
+
+func TestJellyfinUserEndpoints(t *testing.T) {
+	client, srv, s := setUp(t)
+	defer srv.Close()
+
+	apiKey := NewApiKey("test123")
+
+	s.status = http.StatusOK
+
+	t.Run("GetUsers_public", func(t *testing.T) {
+		wantResp := []byte(`[
+			{
+				"Name": "test",
+				"Id": "100000x00000",
+				"HasConfiguredPassword": true
+			}
+		]`)
+
+		s.resp = wantResp
+
+		var want []gelatin.GelatinUser
+		json.Unmarshal(wantResp, &want)
+
+		got, err := client.GetUsers(nil, true)
+		if err != nil {
+			t.Errorf("failed to call endpoint")
+		}
+
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("-want,+got: %s", diff)
+		}
+	})
+
+	t.Run("GetUsers", func(t *testing.T) {
+		wantResp := readTestFile(t)
+
+		s.resp = wantResp
+
+		var want []gelatin.GelatinUser
+		json.Unmarshal(wantResp, &want)
+
+		got, err := client.GetUsers(apiKey, false)
+		if err != nil {
+			t.Errorf("failed to call endpoint")
+		}
+
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("-want,+got: %s", diff)
+		}
+	})
+
+	t.Run("GetUser", func(t *testing.T) {
+		wantResp := []byte(`{
+			"Name": "test",
+			"Id": "100000x00000",
+			"HasConfiguredPassword": true
+		}`)
+
+		s.resp = wantResp
+
+		var want *gelatin.GelatinUser
+		json.Unmarshal(wantResp, &want)
+
+		got, err := client.GetUser(apiKey, want.Id)
+		if err != nil {
+			t.Errorf("failed to call endpoint")
+		}
+
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("-want,+got: %s", diff)
+		}
+	})
+
+	t.Run("UserUpdate", func(t *testing.T) {
+		user := &gelatin.GelatinUser{Id: "abcd123"}
+		err := client.UpdateUser(apiKey, user.Id, user)
+		if err != nil {
+			t.Errorf("failed to call endpoint")
+		}
+	})
+
+	t.Run("UserNew", func(t *testing.T) {
+		wantResp := []byte(`{
+			"Name": "test",
+			"Id": "100000x00000",
+			"HasConfiguredPassword": true
+		}`)
+
+		s.resp = wantResp
+
+		var want *gelatin.GelatinUser
+		json.Unmarshal(wantResp, &want)
+
+		got, err := client.NewUser(apiKey, want.Name)
+		if err != nil {
+			t.Errorf("failed to call endpoint")
+		}
+
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("-want,+got: %s", diff)
+		}
+	})
+
+	t.Run("UserDelete", func(t *testing.T) {
+		err := client.DeleteUser(apiKey, "test123")
+		if err != nil {
+			t.Errorf("failed to call endpoint")
+		}
+	})
+
+	t.Run("UserPassword", func(t *testing.T) {
+		err := client.UpdatePassword(apiKey, "1000x1000", "", "test123", true)
+		if err != nil {
+			t.Errorf("failed to call endpoint")
+		}
+	})
+
+	t.Run("UserAuth", func(t *testing.T) {
+		wantToken := "12345"
+		wantUserAuthResp := &JellyfinUserAuthResponse{
+			AccessToken: wantToken,
+		}
+		wantResp, _ := json.Marshal(wantUserAuthResp)
+
+		s.resp = wantResp
+
+		key, err := client.Authenticate("abcd", "test123")
+		if err != nil {
+			t.Errorf("failed to call endpoint")
+		}
+
+		token := key.ToString()
+
+		if diff := cmp.Diff(wantToken, token); diff != "" {
+			t.Errorf("-want,+got: %s", diff)
+		}
+	})
+
+	t.Run("UserPolicy", func(t *testing.T) {
+		policy := &gelatin.GelatinUserPolicy{}
+		err := client.UpdatePolicy(apiKey, "abcd", policy)
+		if err != nil {
+			t.Errorf("failed to call endpoint")
+		}
+	})
+}

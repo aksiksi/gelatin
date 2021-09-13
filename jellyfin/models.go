@@ -1,5 +1,9 @@
 package jellyfin
 
+type JellyfinUserAuthResponse struct {
+	AccessToken string
+}
+
 type JellyfinUserAccessSchedule struct {
 	DayOfWeek string `validate:"oneof=Sunday Monday Tuesday Wednesday Thursday Friday Saturday Everyday Weekday Weekend"`
 	StartHour float64

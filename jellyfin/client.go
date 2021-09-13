@@ -305,11 +305,7 @@ func (c *JellyfinApiClient) Authenticate(username, password string) (userKey gel
 		return nil, err
 	}
 
-	type authenticationResult struct {
-		AccessToken string
-	}
-
-	resp := &authenticationResult{}
+	resp := &JellyfinUserAuthResponse{}
 
 	dec := json.NewDecoder(raw.Body)
 	if err := dec.Decode(resp); err != nil {
