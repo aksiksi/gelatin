@@ -161,11 +161,22 @@ func verifyEmby() {
 		log.Panic(err)
 	}
 
+	items, err := client.GetItems(adminKey, map[string]string{
+		"IncludeItemTypes": "Movie,Series",
+	})
+	if err != nil {
+		log.Panic(err)
+	}
+
+	log.Printf("Num items: %d", len(items))
+	log.Printf("Random item: %+v", items[len(items)/2])
+
 	// Delete the user
 	err = client.User().DeleteUser(adminKey, user.Id)
 	if err != nil {
 		log.Panic(err)
 	}
+
 }
 
 func main() {

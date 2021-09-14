@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	gelatin "github.com/aksiksi/gelatin/lib"
@@ -31,6 +33,12 @@ const (
 	embyUserPasswordEndpoint     = "/Users"
 	embyUserAuthEndpoint         = "/Users/AuthenticateByName"
 	embyUserPolicyEndpoint       = "/Users"
+)
+
+const (
+	embyProviderIdImdb = "imdb"
+	embyProviderIdTmdb = "tmdb"
+	embyProviderIdTvdb = "tvdb"
 )
 
 type embyApiKey struct {
@@ -352,4 +360,61 @@ func (c *EmbyApiClient) UpdatePolicy(key gelatin.AdminKey, id string, policy *ge
 	}
 
 	return nil
+}
+
+func (c *EmbyApiClient) GetItems(key gelatin.AdminKey, filters map[string]string) ([]gelatin.GelatinLibraryItem, error) {
+	endpoint := fmt.Sprintf("%s/Items", c.hostname)
+
+	// Apply filters to URL string
+	parsedUrl, _ := url.Parse(endpoint)
+	query := parsedUrl.Query()
+	for k, v := range filters {
+		// Always include the ProviderIds in each returned library item
+		if k == "Fields" && !strings.Contains(v, "ProviderIds") {
+			v += ", ProviderIds"
+		}
+
+		query.Set(k, v)
+	}
+
+	if _, ok := filters["Fields"]; !ok {
+		query.Set("Fields", "ProviderIds")
+	}
+	query.Set("Recursive", "true")
+
+	parsedUrl.RawQuery = query.Encode()
+
+	raw, err := c.get(parsedUrl.String(), key)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &EmbyLibraryItemResponse{}
+	dec := json.NewDecoder(raw.Body)
+	if err := dec.Decode(resp); err != nil {
+		return nil, err
+	}
+
+	// Include the provider IDs as struct fields
+	for i := range resp.Items {
+		item := &resp.Items[i]
+
+		for provider, id := range item.ProviderIds {
+			switch strings.ToLower(provider) {
+			case embyProviderIdImdb:
+				item.ImdbId = id
+			case embyProviderIdTmdb:
+				item.TmdbId = id
+			case embyProviderIdTvdb:
+				item.TvdbId = id
+			}
+		}
+	}
+
+	return resp.Items, nil
+}
+
+func (c *EmbyApiClient) GetItemsForUser(key gelatin.ApiKey, id string, filters map[string]string) ([]gelatin.GelatinLibraryItem, error) {
+	filters["UserId"] = id
+	return c.GetItems(key, filters)
 }

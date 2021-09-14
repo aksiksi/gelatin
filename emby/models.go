@@ -153,3 +153,8 @@ type EmbySystemInfoPublicResponse struct {
 	OperatingSystem string
 	Id              string
 }
+
+type EmbyLibraryItemResponse struct {
+	Items            []gelatin.GelatinLibraryItem
+	TotalRecordCount int32
+}

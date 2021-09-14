@@ -104,26 +104,45 @@ type GelatinUser struct {
 	PrimaryImageAspectRatio   *float64
 }
 
+// GelatinLibraryItemUserActivity contains user activity associated with a
+// given library item.
 type GelatinLibraryItemUserActivity struct {
 	PlaybackPositionTicks int64
 	PlayCount             int32
 	IsFavorite            bool
 	LastPlayedDate        string
 	Played                bool
+	Rating                float64
+	UnplayedItemCount     int32 // For series
 }
 
+// GelatinLibraryItem holds info for a single library item
+//
+// Note that this struct tracks a subset of available fields from Emby and Jellyfin.
+// This is by design: we are only interested in getting and updating a few fields for
+// a given library item.
 type GelatinLibraryItem struct {
 	Name         string
 	ServerId     string
 	Id           string
 	RunTimeTicks int64
 	IsFolder     bool
-	Type         string
+	Type         string // Movie, Series, Episode, etc.
 	UserData     *GelatinLibraryItemUserActivity
-	MediaType    string
-	ImdbId       string
-	TmdbId       string
-	TvdbId       string
+	MediaType    string // Video, Photo, etc.
+
+	ProviderIds map[string]string
+	ImdbId      string
+	TmdbId      string
+	TvdbId      string
+
+	// Series-specific info (Type == "Series")
+	SeriesId          string // ID of the series this episode belongs to
+	SeriesName        string
+	SeasonId          string
+	EpisodeNumber     int32
+	IndexNumber       int32
+	ParentIndexNumber int32
 }
 
 type GelatinSystemService interface {
@@ -191,7 +210,7 @@ type GelatinLibraryService interface {
 	GetItems(key AdminKey, filters map[string]string) ([]GelatinLibraryItem, error)
 
 	// Return library items for a _specific_ user (i.e., with user activity attached)
-	GetItemsForUser(key ApiKey, id string) ([]GelatinLibraryItem, error)
+	GetItemsForUser(key ApiKey, id string, filters map[string]string) ([]GelatinLibraryItem, error)
 }
 
 type GelatinPlaylistService interface {
