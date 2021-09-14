@@ -67,7 +67,7 @@ func verifyJellyfin() {
 	log.Printf("Users count: %d", len(users))
 
 	// Create a new user
-	user, err := client.User().NewUser(adminKey, "test123")
+	user, err := client.User().CreateUser(adminKey, "test123")
 	if err != nil {
 		log.Panicf("failed to create new user: %s", err)
 	}
@@ -143,7 +143,7 @@ func verifyEmby() {
 	log.Printf("Users count: %d", len(users))
 
 	// Create a new user
-	user, err := client.User().NewUser(adminKey, "test123")
+	user, err := client.User().CreateUser(adminKey, "test123")
 	if err != nil {
 		log.Panicf("failed to create new user: %s", err)
 	}

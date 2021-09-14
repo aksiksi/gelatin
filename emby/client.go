@@ -191,7 +191,7 @@ func (c *EmbyApiClient) GetUser(key gelatin.ApiKey, id string) (*gelatin.Gelatin
 	return resp, nil
 }
 
-func (c *EmbyApiClient) GetUsers(key gelatin.ApiKey, public bool) ([]gelatin.GelatinUser, error) {
+func (c *EmbyApiClient) GetUsers(key gelatin.AdminKey, public bool) ([]gelatin.GelatinUser, error) {
 	var url string
 
 	if public {
@@ -245,7 +245,7 @@ func (c *EmbyApiClient) UpdateUser(key gelatin.AdminKey, id string, data *gelati
 	return nil
 }
 
-func (c *EmbyApiClient) NewUser(key gelatin.AdminKey, name string) (*gelatin.GelatinUser, error) {
+func (c *EmbyApiClient) CreateUser(key gelatin.AdminKey, name string) (*gelatin.GelatinUser, error) {
 	type createUserByName struct {
 		Name string
 	}

@@ -237,7 +237,7 @@ func TestJellyfinUserEndpoints(t *testing.T) {
 		var want *gelatin.GelatinUser
 		json.Unmarshal(wantResp, &want)
 
-		got, err := client.NewUser(apiKey, want.Name)
+		got, err := client.CreateUser(apiKey, want.Name)
 		if err != nil {
 			t.Errorf("failed to call endpoint")
 		}

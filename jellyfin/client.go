@@ -184,7 +184,7 @@ func (c *JellyfinApiClient) GetUser(key gelatin.ApiKey, id string) (*gelatin.Gel
 	return resp, nil
 }
 
-func (c *JellyfinApiClient) GetUsers(key gelatin.ApiKey, public bool) ([]gelatin.GelatinUser, error) {
+func (c *JellyfinApiClient) GetUsers(key gelatin.AdminKey, public bool) ([]gelatin.GelatinUser, error) {
 	var url string
 	if public {
 		url = fmt.Sprintf("%s%s", c.hostname, jellyfinUserQueryPublicEndpoint)
@@ -222,7 +222,7 @@ func (c *JellyfinApiClient) UpdateUser(key gelatin.AdminKey, id string, data *ge
 	return nil
 }
 
-func (c *JellyfinApiClient) NewUser(key gelatin.AdminKey, name string) (*gelatin.GelatinUser, error) {
+func (c *JellyfinApiClient) CreateUser(key gelatin.AdminKey, name string) (*gelatin.GelatinUser, error) {
 	type createUserByName struct {
 		Name string
 	}
