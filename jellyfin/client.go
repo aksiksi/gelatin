@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	gelatin "github.com/aksiksi/gelatin/lib"
@@ -32,6 +34,16 @@ const (
 	jellyfinUserPasswordEndpoint     = "/Users"
 	jellyfinUserAuthEndpoint         = "/Users/AuthenticateByName"
 	jellyfinUserPolicyEndpoint       = "/Users"
+)
+
+const (
+	jellyfinItemFilterFields    = "fields"
+	jellyfinItemFilterRecursive = "recursive"
+	jellyfinItemFilterUserId    = "userId"
+
+	jellyfinProviderIdImdb = "imdb"
+	jellyfinProviderIdTmdb = "tmdb"
+	jellyfinProviderIdTvdb = "tvdb"
 )
 
 type jellyfinApiKey struct {
@@ -69,6 +81,11 @@ func (c *JellyfinApiClient) System() gelatin.GelatinSystemService {
 }
 
 func (c *JellyfinApiClient) User() gelatin.GelatinUserService {
+	// TODO: Move this out
+	return c
+}
+
+func (c *JellyfinApiClient) Library() gelatin.GelatinLibraryService {
 	// TODO: Move this out
 	return c
 }
@@ -329,4 +346,61 @@ func (c *JellyfinApiClient) UpdatePolicy(key gelatin.AdminKey, userId string, po
 	}
 
 	return nil
+}
+
+func (c *JellyfinApiClient) getItems(key gelatin.AdminKey, filters map[string]string) ([]gelatin.GelatinLibraryItem, error) {
+	endpoint := fmt.Sprintf("%s/Items", c.hostname)
+
+	// Apply filters to URL string
+	parsedUrl, _ := url.Parse(endpoint)
+	query := parsedUrl.Query()
+	for k, v := range filters {
+		// Always include the ProviderIds in each returned library item
+		if k == jellyfinItemFilterFields && !strings.Contains(v, "ProviderIds") {
+			v += ", ProviderIds"
+		}
+
+		query.Set(k, v)
+	}
+
+	if _, ok := filters[jellyfinItemFilterFields]; !ok {
+		query.Set(jellyfinItemFilterFields, "ProviderIds")
+	}
+	query.Set(jellyfinItemFilterRecursive, "true")
+
+	parsedUrl.RawQuery = query.Encode()
+
+	raw, err := c.get(parsedUrl.String(), key)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &JellyfinLibraryItemResponse{}
+	dec := json.NewDecoder(raw.Body)
+	if err := dec.Decode(resp); err != nil {
+		return nil, err
+	}
+
+	// Include the provider IDs as struct fields
+	for i := range resp.Items {
+		item := &resp.Items[i]
+
+		for provider, id := range item.ProviderIds {
+			switch strings.ToLower(provider) {
+			case jellyfinProviderIdImdb:
+				item.ImdbId = id
+			case jellyfinProviderIdTmdb:
+				item.TmdbId = id
+			case jellyfinProviderIdTvdb:
+				item.TvdbId = id
+			}
+		}
+	}
+
+	return resp.Items, nil
+}
+
+func (c *JellyfinApiClient) GetItems(key gelatin.ApiKey, id string, filters map[string]string) ([]gelatin.GelatinLibraryItem, error) {
+	filters[jellyfinItemFilterUserId] = id
+	return c.getItems(key, filters)
 }

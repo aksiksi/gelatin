@@ -1,5 +1,7 @@
 package jellyfin
 
+import gelatin "github.com/aksiksi/gelatin/lib"
+
 type JellyfinUserAuthResponse struct {
 	AccessToken string
 }
@@ -140,4 +142,9 @@ type JellyfinSystemInfoPublicResponse struct {
 	Version         string
 	OperatingSystem string
 	Id              string
+}
+
+type JellyfinLibraryItemResponse struct {
+	Items            []gelatin.GelatinLibraryItem
+	TotalRecordCount int32
 }

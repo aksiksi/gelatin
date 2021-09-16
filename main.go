@@ -85,6 +85,16 @@ func verifyJellyfin() {
 		log.Panic(err)
 	}
 
+	items, err := client.Library().GetItems(adminKey, user.Id, map[string]string{
+		"IncludeItemTypes": "Movie,Series",
+	})
+	if err != nil {
+		log.Panic(err)
+	}
+
+	log.Printf("Num items: %d", len(items))
+	log.Printf("Random item: %+v", items[len(items)/2])
+
 	// Delete the user
 	err = client.User().DeleteUser(adminKey, user.Id)
 	if err != nil {
@@ -161,7 +171,7 @@ func verifyEmby() {
 		log.Panic(err)
 	}
 
-	items, err := client.GetItems(adminKey, map[string]string{
+	items, err := client.Library().GetItems(adminKey, user.Id, map[string]string{
 		"IncludeItemTypes": "Movie,Series",
 	})
 	if err != nil {
@@ -176,7 +186,6 @@ func verifyEmby() {
 	if err != nil {
 		log.Panic(err)
 	}
-
 }
 
 func main() {

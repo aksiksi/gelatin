@@ -203,14 +203,11 @@ type GelatinUserService interface {
 }
 
 type GelatinLibraryService interface {
-	// Get all items in all libraries that match the given filters
+	// GetItems returns library items for a _specific_ user (i.e., with user activity attached)
 	//
 	// Refer to Emby or Jellyfin docs for available item filters. Note that the "recursive"
 	// filter will always be present.
-	GetItems(key AdminKey, filters map[string]string) ([]GelatinLibraryItem, error)
-
-	// Return library items for a _specific_ user (i.e., with user activity attached)
-	GetItemsForUser(key ApiKey, id string, filters map[string]string) ([]GelatinLibraryItem, error)
+	GetItems(key ApiKey, id string, filters map[string]string) ([]GelatinLibraryItem, error)
 }
 
 type GelatinPlaylistService interface {

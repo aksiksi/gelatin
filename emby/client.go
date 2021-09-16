@@ -36,6 +36,10 @@ const (
 )
 
 const (
+	embyItemFilterFields    = "Fields"
+	embyItemFilterRecursive = "Recursive"
+	embyItemFilterUserId    = "UserId"
+
 	embyProviderIdImdb = "imdb"
 	embyProviderIdTmdb = "tmdb"
 	embyProviderIdTvdb = "tvdb"
@@ -80,6 +84,11 @@ func (c *EmbyApiClient) System() gelatin.GelatinSystemService {
 }
 
 func (c *EmbyApiClient) User() gelatin.GelatinUserService {
+	// TODO: Move this out
+	return c
+}
+
+func (c *EmbyApiClient) Library() gelatin.GelatinLibraryService {
 	// TODO: Move this out
 	return c
 }
@@ -362,7 +371,7 @@ func (c *EmbyApiClient) UpdatePolicy(key gelatin.AdminKey, id string, policy *ge
 	return nil
 }
 
-func (c *EmbyApiClient) GetItems(key gelatin.AdminKey, filters map[string]string) ([]gelatin.GelatinLibraryItem, error) {
+func (c *EmbyApiClient) getItems(key gelatin.AdminKey, filters map[string]string) ([]gelatin.GelatinLibraryItem, error) {
 	endpoint := fmt.Sprintf("%s/Items", c.hostname)
 
 	// Apply filters to URL string
@@ -370,17 +379,17 @@ func (c *EmbyApiClient) GetItems(key gelatin.AdminKey, filters map[string]string
 	query := parsedUrl.Query()
 	for k, v := range filters {
 		// Always include the ProviderIds in each returned library item
-		if k == "Fields" && !strings.Contains(v, "ProviderIds") {
+		if k == embyItemFilterFields && !strings.Contains(v, "ProviderIds") {
 			v += ", ProviderIds"
 		}
 
 		query.Set(k, v)
 	}
 
-	if _, ok := filters["Fields"]; !ok {
-		query.Set("Fields", "ProviderIds")
+	if _, ok := filters[embyItemFilterFields]; !ok {
+		query.Set(embyItemFilterFields, "ProviderIds")
 	}
-	query.Set("Recursive", "true")
+	query.Set(embyItemFilterRecursive, "true")
 
 	parsedUrl.RawQuery = query.Encode()
 
@@ -414,7 +423,7 @@ func (c *EmbyApiClient) GetItems(key gelatin.AdminKey, filters map[string]string
 	return resp.Items, nil
 }
 
-func (c *EmbyApiClient) GetItemsForUser(key gelatin.ApiKey, id string, filters map[string]string) ([]gelatin.GelatinLibraryItem, error) {
-	filters["UserId"] = id
-	return c.GetItems(key, filters)
+func (c *EmbyApiClient) GetItems(key gelatin.ApiKey, id string, filters map[string]string) ([]gelatin.GelatinLibraryItem, error) {
+	filters[embyItemFilterUserId] = id
+	return c.getItems(key, filters)
 }
