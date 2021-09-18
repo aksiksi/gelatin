@@ -153,53 +153,53 @@ type GelatinSystemService interface {
 	Ping() error
 
 	// GetLogs returns all logs exposed by the server
-	GetLogs(key ApiKey) ([]GelatinSystemLog, error)
+	GetLogs() ([]GelatinSystemLog, error)
 
 	// GetLogFile downloads the content of a single log file
-	GetLogFile(key ApiKey, name string) (io.ReadCloser, error)
+	GetLogFile(name string) (io.ReadCloser, error)
 
 	// Info returns information about the server
 	//
 	// If "public" is true, this returns only publicly visible system info.
-	Info(key ApiKey, public bool) (*GelatinSystemInfo, error)
+	Info(public bool) (*GelatinSystemInfo, error)
 }
 
 type GelatinUserService interface {
 	// GetUser returns the user with the specified ID
-	GetUser(key ApiKey, id string) (*GelatinUser, error)
+	GetUser(id string) (*GelatinUser, error)
 
 	// GetUsers returns all configured users
 	//
 	// If "public" is true, returns only the publicly visible users.
-	GetUsers(key AdminKey, public bool) ([]GelatinUser, error)
+	GetUsers(public bool) ([]GelatinUser, error)
 
 	// UpdateUser updates a single user
 	//
 	// Note that user state is _overwritten_. Use this in conjunction with
 	// GetUser().
-	UpdateUser(key AdminKey, id string, data *GelatinUser) error
+	UpdateUser(id string, data *GelatinUser) error
 
 	// CreateUser creates a new user with the given username
-	CreateUser(key AdminKey, name string) (*GelatinUser, error)
+	CreateUser(name string) (*GelatinUser, error)
 
 	// DeleteUser deletes the user with the specified ID
-	DeleteUser(key AdminKey, id string) error
+	DeleteUser(id string) error
 
 	// UpdatePassword updates the given user's password
 	//
 	// If "reset" is true, the password will be reset first.
-	UpdatePassword(key AdminKey, id, currentPassword, newPassword string, reset bool) error
+	UpdatePassword(id, currentPassword, newPassword string, reset bool) error
 
 	// Authenticate as a specific user
 	//
 	// Use this method with an admin account to create an AdminKey.
-	Authenticate(username, password string) (userKey ApiKey, err error)
+	Authenticate(username, password string) (key ApiKey, err error)
 
 	// UpdatePolicy updates the policy for the specified user.
 	//
 	// Note that user state is _overwritten_. Use this in conjunction with
 	// GetUser().
-	UpdatePolicy(key AdminKey, id string, policy *GelatinUserPolicy) error
+	UpdatePolicy(id string, policy *GelatinUserPolicy) error
 }
 
 type GelatinLibraryService interface {
@@ -207,13 +207,17 @@ type GelatinLibraryService interface {
 	//
 	// Refer to Emby or Jellyfin docs for available item filters. Note that the "recursive"
 	// filter will always be present.
-	GetItems(key ApiKey, id string, filters map[string]string) ([]GelatinLibraryItem, error)
+	GetItems(id string, filters map[string]string) ([]GelatinLibraryItem, error)
 }
 
 type GelatinPlaylistService interface {
 }
 
 type GelatinService interface {
+	// ApiKey returns the current API key used by the client
+	ApiKey() ApiKey
+	SetApiKey(key ApiKey)
+
 	System() GelatinSystemService
 	User() GelatinUserService
 	Library() GelatinLibraryService

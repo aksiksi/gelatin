@@ -17,7 +17,7 @@ var (
 )
 
 func verifyJellyfin() {
-	client := jellyfin.NewJellyfinApiClient("http://192.168.0.99:8097")
+	client := jellyfin.NewJellyfinApiClient("http://192.168.0.99:8097", nil)
 
 	if err := client.System().Ping(); err != nil {
 		log.Panicf("failed to ping: %s", err)
@@ -28,14 +28,16 @@ func verifyJellyfin() {
 		log.Panicf("failed to authenticate")
 	}
 
-	systemInfo, err := client.System().Info(nil, true)
+	client.SetApiKey(adminKey)
+
+	systemInfo, err := client.System().Info(true)
 	if err != nil {
 		log.Panicf("failed to get system info: %s", err)
 	}
 
 	log.Printf("Jellyfin info: %+v", systemInfo)
 
-	logsInfo, err := client.System().GetLogs(adminKey)
+	logsInfo, err := client.System().GetLogs()
 	if err != nil {
 		log.Panicf("failed to get system logs: %s", err)
 	}
@@ -43,7 +45,7 @@ func verifyJellyfin() {
 	log.Printf("Jellyfin logs: %+v", logsInfo)
 
 	logName, logSize := logsInfo[0].Name, logsInfo[0].Size
-	data, err := client.System().GetLogFile(adminKey, logName)
+	data, err := client.System().GetLogFile(logName)
 	if err != nil {
 		log.Panicf("failed to get system log %s: %s", logName, err)
 	}
@@ -53,13 +55,13 @@ func verifyJellyfin() {
 	log.Printf("got log %s, size = %d, expected = %d", logName, len(logData), logSize)
 
 	// Query public users
-	_, err = client.User().GetUsers(nil, true)
+	_, err = client.User().GetUsers(true)
 	if err != nil {
 		log.Panicf("failed to query users: %s", err)
 	}
 
 	// Query available users
-	users, err := client.User().GetUsers(adminKey, false)
+	users, err := client.User().GetUsers(false)
 	if err != nil {
 		log.Panicf("failed to query users: %s", err)
 	}
@@ -67,7 +69,7 @@ func verifyJellyfin() {
 	log.Printf("Users count: %d", len(users))
 
 	// Create a new user
-	user, err := client.User().CreateUser(adminKey, "test123")
+	user, err := client.User().CreateUser("test123")
 	if err != nil {
 		log.Panicf("failed to create new user: %s", err)
 	}
@@ -75,17 +77,17 @@ func verifyJellyfin() {
 	log.Printf("User: %v", user)
 
 	// Set user password
-	err = client.User().UpdatePassword(adminKey, user.Id, "", "abcd1234", false)
+	err = client.User().UpdatePassword(user.Id, "", "abcd1234", false)
 	log.Printf("%v", err)
 
 	// Make the user an admin
 	user.Policy.IsAdministrator = true
-	err = client.User().UpdatePolicy(adminKey, user.Id, &user.Policy)
+	err = client.User().UpdatePolicy(user.Id, &user.Policy)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	items, err := client.Library().GetItems(adminKey, user.Id, map[string]string{
+	items, err := client.Library().GetItems(user.Id, map[string]string{
 		"IncludeItemTypes": "Movie,Series",
 	})
 	if err != nil {
@@ -96,14 +98,14 @@ func verifyJellyfin() {
 	log.Printf("Random item: %+v", items[len(items)/2])
 
 	// Delete the user
-	err = client.User().DeleteUser(adminKey, user.Id)
+	err = client.User().DeleteUser(user.Id)
 	if err != nil {
 		log.Panic(err)
 	}
 }
 
 func verifyEmby() {
-	client := emby.NewEmbyApiClient("http://192.168.0.99:8096")
+	client := emby.NewEmbyApiClient("http://192.168.0.99:8096", nil)
 
 	if err := client.System().Ping(); err != nil {
 		log.Panicf("failed to ping: %s", err)
@@ -114,14 +116,16 @@ func verifyEmby() {
 		log.Panicf("failed to authenticate")
 	}
 
-	resp, err := client.System().Info(nil, true)
+	client.SetApiKey(adminKey)
+
+	resp, err := client.System().Info(true)
 	if err != nil {
 		log.Panicf("failed to get system info: %s", err)
 	}
 
 	log.Printf("Emby info: %+v", resp)
 
-	logsInfo, err := client.System().GetLogs(adminKey)
+	logsInfo, err := client.System().GetLogs()
 	if err != nil {
 		log.Panicf("failed to get system logs: %s", err)
 	}
@@ -129,7 +133,7 @@ func verifyEmby() {
 	log.Printf("Emby logs: %+v", logsInfo)
 
 	logName, logSize := logsInfo[0].Name, logsInfo[0].Size
-	data, err := client.System().GetLogFile(adminKey, logName)
+	data, err := client.System().GetLogFile(logName)
 	if err != nil {
 		log.Panicf("failed to get system log %s: %s", logName, err)
 	}
@@ -139,13 +143,13 @@ func verifyEmby() {
 	log.Printf("got log %s, size = %d, expected = %d", logName, len(logData), logSize)
 
 	// Query public users
-	_, err = client.User().GetUsers(nil, true)
+	_, err = client.User().GetUsers(true)
 	if err != nil {
 		log.Panicf("failed to query users: %s", err)
 	}
 
 	// Query available users
-	users, err := client.User().GetUsers(adminKey, false)
+	users, err := client.User().GetUsers(false)
 	if err != nil {
 		log.Panicf("failed to query users: %s", err)
 	}
@@ -153,7 +157,7 @@ func verifyEmby() {
 	log.Printf("Users count: %d", len(users))
 
 	// Create a new user
-	user, err := client.User().CreateUser(adminKey, "test123")
+	user, err := client.User().CreateUser("test123")
 	if err != nil {
 		log.Panicf("failed to create new user: %s", err)
 	}
@@ -161,17 +165,17 @@ func verifyEmby() {
 	log.Printf("User: %v", user)
 
 	// Set user password
-	err = client.User().UpdatePassword(adminKey, user.Id, "", "abcd1234", false)
+	err = client.User().UpdatePassword(user.Id, "", "abcd1234", false)
 	log.Printf("%v", err)
 
 	// Make the user an admin
 	user.Policy.IsAdministrator = true
-	err = client.User().UpdatePolicy(adminKey, user.Id, &user.Policy)
+	err = client.User().UpdatePolicy(user.Id, &user.Policy)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	items, err := client.Library().GetItems(adminKey, user.Id, map[string]string{
+	items, err := client.Library().GetItems(user.Id, map[string]string{
 		"IncludeItemTypes": "Movie,Series",
 	})
 	if err != nil {
@@ -182,7 +186,7 @@ func verifyEmby() {
 	log.Printf("Random item: %+v", items[len(items)/2])
 
 	// Delete the user
-	err = client.User().DeleteUser(adminKey, user.Id)
+	err = client.User().DeleteUser(user.Id)
 	if err != nil {
 		log.Panic(err)
 	}

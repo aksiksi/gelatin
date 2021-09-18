@@ -47,7 +47,8 @@ func setUp(t *testing.T) (*EmbyApiClient, *httptest.Server, *mockEmbyServer) {
 
 	s := &mockEmbyServer{}
 	srv := httptest.NewServer(s)
-	client := NewEmbyApiClient(srv.URL)
+	apiKey := NewApiKey("test123")
+	client := NewEmbyApiClient(srv.URL, apiKey)
 
 	return client, srv, s
 }
@@ -55,8 +56,6 @@ func setUp(t *testing.T) (*EmbyApiClient, *httptest.Server, *mockEmbyServer) {
 func TestEmbySystemEndpoints(t *testing.T) {
 	client, srv, s := setUp(t)
 	defer srv.Close()
-
-	apiKey := NewApiKey("test123")
 
 	s.status = http.StatusOK
 
@@ -79,7 +78,7 @@ func TestEmbySystemEndpoints(t *testing.T) {
 		want := &gelatin.GelatinSystemInfo{}
 		json.Unmarshal(wantResp, want)
 
-		got, err := client.Info(nil, true)
+		got, err := client.Info(true)
 		if err != nil {
 			t.Errorf("failed to call SystemInfoPublic endpoint")
 		}
@@ -114,7 +113,7 @@ func TestEmbySystemEndpoints(t *testing.T) {
 		wantResp := []byte("this is a log file")
 		s.resp = wantResp
 
-		logReader, err := client.GetLogFile(apiKey, "test")
+		logReader, err := client.GetLogFile("test")
 		if err != nil {
 			t.Errorf("failed to call SystemLogs")
 		}
@@ -133,7 +132,7 @@ func TestEmbySystemEndpoints(t *testing.T) {
 		want := &EmbySystemLogsQueryResponse{}
 		json.Unmarshal(data, want)
 
-		got, err := client.GetLogs(apiKey)
+		got, err := client.GetLogs()
 		if err != nil {
 			t.Errorf("failed to call SystemLogsQuery")
 		}
@@ -147,8 +146,6 @@ func TestEmbySystemEndpoints(t *testing.T) {
 func TestEmbyUserEndpoints(t *testing.T) {
 	client, srv, s := setUp(t)
 	defer srv.Close()
-
-	apiKey := NewApiKey("test123")
 
 	s.status = http.StatusOK
 
@@ -166,7 +163,7 @@ func TestEmbyUserEndpoints(t *testing.T) {
 		var want []gelatin.GelatinUser
 		json.Unmarshal(wantResp, &want)
 
-		got, err := client.GetUsers(nil, true)
+		got, err := client.GetUsers(true)
 		if err != nil {
 			t.Errorf("failed to call endpoint")
 		}
@@ -193,7 +190,7 @@ func TestEmbyUserEndpoints(t *testing.T) {
 		var want *EmbyUserQueryResponse
 		json.Unmarshal(wantResp, &want)
 
-		got, err := client.GetUsers(apiKey, false)
+		got, err := client.GetUsers(false)
 		if err != nil {
 			t.Errorf("failed to call endpoint")
 		}
@@ -215,7 +212,7 @@ func TestEmbyUserEndpoints(t *testing.T) {
 		var want *gelatin.GelatinUser
 		json.Unmarshal(wantResp, &want)
 
-		got, err := client.GetUser(apiKey, want.Id)
+		got, err := client.GetUser(want.Id)
 		if err != nil {
 			t.Errorf("failed to call endpoint")
 		}
@@ -227,7 +224,7 @@ func TestEmbyUserEndpoints(t *testing.T) {
 
 	t.Run("UserUpdate", func(t *testing.T) {
 		user := &gelatin.GelatinUser{Id: "abcd123"}
-		err := client.UpdateUser(apiKey, user.Id, user)
+		err := client.UpdateUser(user.Id, user)
 		if err != nil {
 			t.Errorf("failed to call endpoint")
 		}
@@ -245,7 +242,7 @@ func TestEmbyUserEndpoints(t *testing.T) {
 		var want *gelatin.GelatinUser
 		json.Unmarshal(wantResp, &want)
 
-		got, err := client.CreateUser(apiKey, want.Name)
+		got, err := client.CreateUser(want.Name)
 		if err != nil {
 			t.Errorf("failed to call endpoint")
 		}
@@ -256,14 +253,14 @@ func TestEmbyUserEndpoints(t *testing.T) {
 	})
 
 	t.Run("UserDelete", func(t *testing.T) {
-		err := client.DeleteUser(apiKey, "test123")
+		err := client.DeleteUser("test123")
 		if err != nil {
 			t.Errorf("failed to call endpoint")
 		}
 	})
 
 	t.Run("UserPassword", func(t *testing.T) {
-		err := client.UpdatePassword(apiKey, "1000x1000", "", "test123", true)
+		err := client.UpdatePassword("1000x1000", "", "test123", true)
 		if err != nil {
 			t.Errorf("failed to call endpoint")
 		}
@@ -292,7 +289,7 @@ func TestEmbyUserEndpoints(t *testing.T) {
 
 	t.Run("UserPolicy", func(t *testing.T) {
 		policy := &gelatin.GelatinUserPolicy{}
-		err := client.UpdatePolicy(apiKey, "abcd", policy)
+		err := client.UpdatePolicy("abcd", policy)
 		if err != nil {
 			t.Errorf("failed to call endpoint")
 		}
