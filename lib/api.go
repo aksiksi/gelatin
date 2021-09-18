@@ -15,8 +15,6 @@ func httpStatusToErr(code int) error {
 	switch code {
 	case http.StatusOK, http.StatusNoContent:
 		return nil
-	case http.StatusUnauthorized:
-		return errors.New("unauthorized: if accessing a private API, make sure to set a valid API key")
 	default:
 		return errors.New(http.StatusText(code))
 	}

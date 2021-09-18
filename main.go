@@ -7,6 +7,7 @@ import (
 
 	"github.com/aksiksi/gelatin/emby"
 	"github.com/aksiksi/gelatin/jellyfin"
+	gelatin "github.com/aksiksi/gelatin/lib"
 )
 
 var (
@@ -192,6 +193,22 @@ func verifyEmby() {
 	}
 }
 
+func verifyGelatinClient() {
+	embyClient := emby.NewEmbyApiClient("http://192.168.0.99:8096", nil)
+	embyKey, _ := embyClient.User().Authenticate(embyAdminUser, embyAdminPass)
+	embyClient.SetApiKey(embyKey)
+
+	jellyfinClient := jellyfin.NewJellyfinApiClient("http://192.168.0.99:8097", nil)
+	jellyfinKey, _ := jellyfinClient.User().Authenticate(jellyfinAdminUser, jellyfinAdminPass)
+	jellyfinClient.SetApiKey(jellyfinKey)
+
+	client := gelatin.NewGelatinClient(embyClient, jellyfinClient)
+	err := client.MigrateUsers(nil)
+	if err != nil {
+		log.Print(err)
+	}
+}
+
 func main() {
 	flag.StringVar(&jellyfinAdminUser, "jellyfin-admin-user", "", "Jellyfin admin username")
 	flag.StringVar(&jellyfinAdminPass, "jellyfin-admin-pass", "", "Jellyfin admin password")
@@ -209,4 +226,5 @@ func main() {
 
 	verifyEmby()
 	verifyJellyfin()
+	verifyGelatinClient()
 }

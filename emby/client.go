@@ -108,6 +108,11 @@ func (c *EmbyApiClient) Library() gelatin.GelatinLibraryService {
 	return c
 }
 
+func (c *EmbyApiClient) Playlist() gelatin.GelatinPlaylistService {
+	// TODO: Move this out
+	return c
+}
+
 func (c *EmbyApiClient) request(method string, url string, body io.Reader, key gelatin.ApiKey) (*http.Response, error) {
 	headers := map[string]string{
 		embyApiKeyAuthHeader: `Emby Client="gelatin", Device="gelatin", DeviceId="007", Version="0.0.1"`,

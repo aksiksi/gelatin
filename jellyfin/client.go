@@ -109,6 +109,11 @@ func (c *JellyfinApiClient) Library() gelatin.GelatinLibraryService {
 	return c
 }
 
+func (c *JellyfinApiClient) Playlist() gelatin.GelatinPlaylistService {
+	// TODO: Move this out
+	return c
+}
+
 func (c *JellyfinApiClient) request(method string, url string, body io.Reader, key gelatin.ApiKey) (*http.Response, error) {
 	headers := map[string]string{
 		jellyfinApiKeyAuthHeader: `MediaBrowser Client="gelatin", Device="gelatin", DeviceId="007", Version="0.0.1"`,
