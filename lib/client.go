@@ -1,6 +1,10 @@
 package gelatin
 
-import "log"
+import (
+	"log"
+
+	"github.com/google/go-cmp/cmp"
+)
 
 type GelatinClient struct {
 	// Export data from this service
@@ -85,4 +89,36 @@ func (c *GelatinClient) MigrateUsers(passwords map[string]string) error {
 	}
 
 	return nil
+}
+
+// DiffUsers returns a diff of the list of users
+//
+// If full is true, the diff will include the full user struct.
+func (c *GelatinClient) DiffUsers(full bool) (string, error) {
+	fromUsers, err := c.from.User().GetUsers(false)
+	if err != nil {
+		return "", err
+	}
+
+	intoUsers, err := c.into.User().GetUsers(false)
+	if err != nil {
+		return "", err
+	}
+
+	if full {
+		return cmp.Diff(fromUsers, intoUsers), nil
+	}
+
+	var fromUsernames []string
+	var intoUsernames []string
+
+	for _, user := range fromUsers {
+		fromUsernames = append(fromUsernames, user.Name)
+	}
+
+	for _, user := range intoUsers {
+		intoUsernames = append(intoUsernames, user.Name)
+	}
+
+	return cmp.Diff(fromUsernames, intoUsernames), nil
 }

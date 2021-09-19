@@ -203,8 +203,15 @@ func verifyGelatinClient() {
 	jellyfinClient.SetApiKey(jellyfinKey)
 
 	client := gelatin.NewGelatinClient(embyClient, jellyfinClient)
-	err := client.MigrateUsers(nil)
+
+	userDiff, err := client.DiffUsers(false)
 	if err != nil {
+		log.Print(err)
+	}
+
+	log.Printf("User diff: %s", userDiff)
+
+	if err := client.MigrateUsers(nil); err != nil {
 		log.Print(err)
 	}
 }
