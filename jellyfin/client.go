@@ -368,7 +368,7 @@ func (c *JellyfinApiClient) UpdatePolicy(userId string, policy *gelatin.GelatinU
 	return nil
 }
 
-func (c *JellyfinApiClient) getItems(filters map[string]string) ([]gelatin.GelatinLibraryItem, error) {
+func (c *JellyfinApiClient) GetItems(filters map[string]string, recursive bool) ([]gelatin.GelatinLibraryItem, error) {
 	endpoint := fmt.Sprintf("%s/Items", c.hostname)
 
 	// Apply filters to URL string
@@ -420,7 +420,7 @@ func (c *JellyfinApiClient) getItems(filters map[string]string) ([]gelatin.Gelat
 	return resp.Items, nil
 }
 
-func (c *JellyfinApiClient) GetItems(id string, filters map[string]string) ([]gelatin.GelatinLibraryItem, error) {
+func (c *JellyfinApiClient) GetItemsByUser(id string, filters map[string]string) ([]gelatin.GelatinLibraryItem, error) {
 	filters[jellyfinItemFilterUserId] = id
-	return c.getItems(filters)
+	return c.GetItems(filters, true)
 }

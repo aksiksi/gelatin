@@ -203,11 +203,17 @@ type GelatinUserService interface {
 }
 
 type GelatinLibraryService interface {
-	// GetItems returns library items for a _specific_ user (i.e., with user activity attached)
+	// GetItems returns library items that match the given filters.
 	//
-	// Refer to Emby or Jellyfin docs for available item filters. Note that the "recursive"
-	// filter will always be present.
-	GetItems(id string, filters map[string]string) ([]GelatinLibraryItem, error)
+	// If `recursive` is true, the search will recurse through library folders.
+	//
+	// Refer to Emby or Jellyfin docs for available item filters.
+	GetItems(filters map[string]string, recursive bool) ([]GelatinLibraryItem, error)
+
+	// GetItemsByUser returns library items for a _specific_ user (i.e., with user activity attached)
+	//
+	// Refer to Emby or Jellyfin docs for available item filters.
+	GetItemsByUser(id string, filters map[string]string) ([]GelatinLibraryItem, error)
 }
 
 type GelatinPlaylistService interface {

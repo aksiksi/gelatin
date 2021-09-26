@@ -387,7 +387,7 @@ func (c *EmbyApiClient) UpdatePolicy(id string, policy *gelatin.GelatinUserPolic
 	return nil
 }
 
-func (c *EmbyApiClient) getItems(filters map[string]string) ([]gelatin.GelatinLibraryItem, error) {
+func (c *EmbyApiClient) GetItems(filters map[string]string, recursive bool) ([]gelatin.GelatinLibraryItem, error) {
 	endpoint := fmt.Sprintf("%s/Items", c.hostname)
 
 	// Apply filters to URL string
@@ -405,7 +405,10 @@ func (c *EmbyApiClient) getItems(filters map[string]string) ([]gelatin.GelatinLi
 	if _, ok := filters[embyItemFilterFields]; !ok {
 		query.Set(embyItemFilterFields, "ProviderIds")
 	}
-	query.Set(embyItemFilterRecursive, "true")
+
+	if recursive {
+		query.Set(embyItemFilterRecursive, "true")
+	}
 
 	parsedUrl.RawQuery = query.Encode()
 
@@ -439,7 +442,7 @@ func (c *EmbyApiClient) getItems(filters map[string]string) ([]gelatin.GelatinLi
 	return resp.Items, nil
 }
 
-func (c *EmbyApiClient) GetItems(id string, filters map[string]string) ([]gelatin.GelatinLibraryItem, error) {
+func (c *EmbyApiClient) GetItemsByUser(id string, filters map[string]string) ([]gelatin.GelatinLibraryItem, error) {
 	filters[embyItemFilterUserId] = id
-	return c.getItems(filters)
+	return c.GetItems(filters, true)
 }
