@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -38,9 +39,14 @@ const (
 )
 
 const (
-	jellyfinItemFilterFields    = "fields"
-	jellyfinItemFilterRecursive = "recursive"
-	jellyfinItemFilterUserId    = "userId"
+	jellyfinItemFilterParentId           = "parentId"
+	jellyfinItemFilterFields             = "fields"
+	jellyfinItemFilterRecursive          = "recursive"
+	jellyfinItemFilterUserId             = "userId"
+	jellyfinItemFilterFilters            = "filters"
+	jellyfinItemFilterFiltersIsFolder    = "IsFolder"
+	jellyfinItemFilterFiltersIsNotFolder = "IsNotFolder"
+	jellyfinItemFilterFiltersIsPlayed    = "IsPlayed"
 
 	jellyfinProviderIdImdb = "imdb"
 	jellyfinProviderIdTmdb = "tmdb"
@@ -369,6 +375,10 @@ func (c *JellyfinApiClient) UpdatePolicy(userId string, policy *gelatin.GelatinU
 }
 
 func (c *JellyfinApiClient) GetItems(filters map[string]string, recursive bool) ([]gelatin.GelatinLibraryItem, error) {
+	if filters == nil {
+		filters = make(map[string]string)
+	}
+
 	endpoint := fmt.Sprintf("%s/Items", c.hostname)
 
 	// Apply filters to URL string
@@ -421,6 +431,134 @@ func (c *JellyfinApiClient) GetItems(filters map[string]string, recursive bool) 
 }
 
 func (c *JellyfinApiClient) GetItemsByUser(id string, filters map[string]string) ([]gelatin.GelatinLibraryItem, error) {
+	if filters == nil {
+		filters = make(map[string]string)
+	}
+
 	filters[jellyfinItemFilterUserId] = id
+
 	return c.GetItems(filters, true)
+}
+
+func (c *JellyfinApiClient) UpdateItem(itemId string, item *gelatin.GelatinLibraryItem) error {
+	url := fmt.Sprintf("%s/Items/%s", c.hostname, itemId)
+
+	data, err := json.Marshal(item)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *JellyfinApiClient) updateItemFavoriteState(itemId string, userId string, favorite bool) error {
+	url := fmt.Sprintf("%s/Users/%s/FavoriteItems/%s", c.hostname, userId, itemId)
+
+	var method string
+	if favorite {
+		method = http.MethodPost
+	} else {
+		method = http.MethodDelete
+	}
+
+	_, err := c.request(method, url, nil, c.apiKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *JellyfinApiClient) updateItemPlayedState(itemId string, userId string, played bool) error {
+	url := fmt.Sprintf("%s/Users/%s/PlayedItems/%s", c.hostname, userId, itemId)
+
+	var method string
+	if played {
+		method = http.MethodPost
+	} else {
+		method = http.MethodDelete
+	}
+
+	_, err := c.request(method, url, nil, c.apiKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *JellyfinApiClient) updateItemPlayingState(itemId string, userId string, ticks int64) error {
+	url := fmt.Sprintf("%s/Users/%s/PlayingItems/%s/Progress", c.hostname, userId, itemId)
+
+	playingStateRequest := map[string]string{
+		"positionTicks": strconv.FormatInt(ticks, 10),
+	}
+
+	data, err := json.Marshal(playingStateRequest)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), c.apiKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *JellyfinApiClient) UpdateItemUserActivity(itemId string, userId string, old, new *gelatin.GelatinLibraryItemUserActivity) error {
+	/*
+		NOTE(aksiksi): Jellyfin does not expose a UserData update endpoint. So, to achieve the same thing,
+		we need to use 3 different endpoints.
+
+		- Favorite: /Users/{userId}/PlayedItems/{itemId} (POST)
+			- DELETE to remove
+		- Played: /Users/{userId}/FavoriteItems/{itemId} (POST)
+			- DELETE to remove
+
+		As far as watch progress goes, you need to start a play session and report an update...
+	*/
+	if old.IsFavorite != new.IsFavorite {
+		if err := c.updateItemFavoriteState(itemId, userId, new.IsFavorite); err != nil {
+			return err
+		}
+	}
+
+	if old.Played != new.Played {
+		if err := c.updateItemPlayedState(itemId, userId, new.Played); err != nil {
+			return err
+		}
+	}
+
+	// TODO(aksiksi): Figure out why this isn't working. Do we need to use /Sessions?
+	if !new.Played && new.PlaybackPositionTicks != 0 {
+		if err := c.updateItemPlayingState(itemId, userId, new.PlaybackPositionTicks); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *JellyfinApiClient) GetItemFilterString(filter gelatin.GelatinItemFilterName) string {
+	switch filter {
+	case gelatin.GelatinItemFilterFilters:
+		return jellyfinItemFilterFilters
+	case gelatin.GelatinItemFilterParentId:
+		return jellyfinItemFilterParentId
+	case gelatin.GelatinItemFilterFiltersIsFolder:
+		return jellyfinItemFilterFiltersIsFolder
+	case gelatin.GelatinItemFilterFiltersIsNotFolder:
+		return jellyfinItemFilterFiltersIsNotFolder
+	case gelatin.GelatinItemFilterFiltersIsPlayed:
+		return jellyfinItemFilterFiltersIsPlayed
+	default:
+		panic("invalid filter name")
+	}
 }

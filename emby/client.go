@@ -37,9 +37,14 @@ const (
 )
 
 const (
-	embyItemFilterFields    = "Fields"
-	embyItemFilterRecursive = "Recursive"
-	embyItemFilterUserId    = "UserId"
+	embyItemFilterParentId           = "ParentId"
+	embyItemFilterFields             = "Fields"
+	embyItemFilterRecursive          = "Recursive"
+	embyItemFilterUserId             = "UserId"
+	embyItemFilterFilters            = "Filters"
+	embyItemFilterFiltersIsFolder    = "IsFolder"
+	embyItemFilterFiltersIsNotFolder = "IsNotFolder"
+	embyItemFilterFiltersIsPlayed    = "IsPlayed"
 
 	embyProviderIdImdb = "imdb"
 	embyProviderIdTmdb = "tmdb"
@@ -388,6 +393,10 @@ func (c *EmbyApiClient) UpdatePolicy(id string, policy *gelatin.GelatinUserPolic
 }
 
 func (c *EmbyApiClient) GetItems(filters map[string]string, recursive bool) ([]gelatin.GelatinLibraryItem, error) {
+	if filters == nil {
+		filters = make(map[string]string)
+	}
+
 	endpoint := fmt.Sprintf("%s/Items", c.hostname)
 
 	// Apply filters to URL string
@@ -443,6 +452,60 @@ func (c *EmbyApiClient) GetItems(filters map[string]string, recursive bool) ([]g
 }
 
 func (c *EmbyApiClient) GetItemsByUser(id string, filters map[string]string) ([]gelatin.GelatinLibraryItem, error) {
+	if filters == nil {
+		filters = make(map[string]string)
+	}
+
 	filters[embyItemFilterUserId] = id
+
 	return c.GetItems(filters, true)
+}
+
+func (c *EmbyApiClient) UpdateItem(itemId string, item *gelatin.GelatinLibraryItem) error {
+	url := fmt.Sprintf("%s/Items/%s", c.hostname, itemId)
+
+	data, err := json.Marshal(item)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), c.apiKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *EmbyApiClient) UpdateItemUserActivity(itemId string, userId string, _, activity *gelatin.GelatinLibraryItemUserActivity) error {
+	url := fmt.Sprintf("%s/Users/%s/Items/%s/UserData", c.hostname, userId, itemId)
+
+	data, err := json.Marshal(activity)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.request(http.MethodPost, url, bytes.NewReader(data), c.apiKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *EmbyApiClient) GetItemFilterString(filter gelatin.GelatinItemFilterName) string {
+	switch filter {
+	case gelatin.GelatinItemFilterFilters:
+		return embyItemFilterFilters
+	case gelatin.GelatinItemFilterParentId:
+		return embyItemFilterParentId
+	case gelatin.GelatinItemFilterFiltersIsFolder:
+		return embyItemFilterFiltersIsFolder
+	case gelatin.GelatinItemFilterFiltersIsNotFolder:
+		return embyItemFilterFiltersIsNotFolder
+	case gelatin.GelatinItemFilterFiltersIsPlayed:
+		return embyItemFilterFiltersIsPlayed
+	default:
+		panic("invalid filter name")
+	}
 }

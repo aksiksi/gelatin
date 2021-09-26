@@ -1,7 +1,18 @@
 package gelatin
 
 import (
+	"fmt"
 	"io"
+)
+
+type GelatinItemFilterName int
+
+const (
+	GelatinItemFilterFilters GelatinItemFilterName = iota
+	GelatinItemFilterFiltersIsPlayed
+	GelatinItemFilterFiltersIsFolder
+	GelatinItemFilterFiltersIsNotFolder
+	GelatinItemFilterParentId
 )
 
 type GelatinSystemLog struct {
@@ -113,7 +124,31 @@ type GelatinLibraryItemUserActivity struct {
 	LastPlayedDate        string
 	Played                bool
 	Rating                float64
-	UnplayedItemCount     int32 // For series
+	UnplayedItemCount     int32   // For series
+	PlayedPercentage      float64 // For series
+}
+
+func (i *GelatinLibraryItemUserActivity) IsMatch(other *GelatinLibraryItemUserActivity) bool {
+	if i.IsFavorite != other.IsFavorite {
+		return false
+	}
+	if i.Played != other.Played {
+		return false
+	}
+	if i.PlayCount != other.PlayCount {
+		return false
+	}
+	if i.PlaybackPositionTicks != other.PlaybackPositionTicks {
+		return false
+	}
+	if i.Rating != other.Rating {
+		return false
+	}
+	if i.Rating != other.Rating {
+		return false
+	}
+
+	return true
 }
 
 // GelatinLibraryItem holds info for a single library item
@@ -127,7 +162,7 @@ type GelatinLibraryItem struct {
 	Id           string
 	RunTimeTicks int64
 	IsFolder     bool
-	Type         string // Movie, Series, Episode, etc.
+	Type         string // Movie, Series, Season, Episode, etc.
 	UserData     *GelatinLibraryItemUserActivity
 	MediaType    string // Video, Photo, etc.
 
@@ -214,6 +249,17 @@ type GelatinLibraryService interface {
 	//
 	// Refer to Emby or Jellyfin docs for available item filters.
 	GetItemsByUser(id string, filters map[string]string) ([]GelatinLibraryItem, error)
+
+	// UpdateItem updates the given item
+	//
+	// Note that this does not modify item user data!
+	UpdateItem(itemId string, item *GelatinLibraryItem) error
+
+	// UpdateItemUserData updates the user data for the given item
+	UpdateItemUserActivity(itemId string, userId string, old, new *GelatinLibraryItemUserActivity) error
+
+	// GetItemFilterString returns the string representation of the given filter
+	GetItemFilterString(filter GelatinItemFilterName) string
 }
 
 type GelatinPlaylistService interface {
@@ -222,10 +268,28 @@ type GelatinPlaylistService interface {
 type GelatinService interface {
 	// ApiKey returns the current API key used by the client
 	ApiKey() ApiKey
+
+	// SetApiKey sets the API key
 	SetApiKey(key ApiKey)
 
 	System() GelatinSystemService
 	User() GelatinUserService
 	Library() GelatinLibraryService
 	Playlist() GelatinPlaylistService
+}
+
+// Gets a user by name from the given service
+func getUserByName(s GelatinService, username string) (*GelatinUser, error) {
+	users, err := s.User().GetUsers(false)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, user := range users {
+		if user.Name == username {
+			return &user, nil
+		}
+	}
+
+	return nil, fmt.Errorf("user %q not found", username)
 }
