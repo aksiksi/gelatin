@@ -3,9 +3,14 @@ package gelatin
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/google/go-cmp/cmp"
 )
+
+type GelatinClientOpts struct {
+	Interactive bool
+}
 
 type GelatinClient struct {
 	// Export data from this service
@@ -13,12 +18,19 @@ type GelatinClient struct {
 
 	// Import data into this service
 	into GelatinService
+
+	opts GelatinClientOpts
 }
 
-func NewGelatinClient(from GelatinService, into GelatinService) *GelatinClient {
-	return &GelatinClient{
-		from,
-		into,
+func NewGelatinClient(from GelatinService, into GelatinService, opts *GelatinClientOpts) *GelatinClient {
+	if from == nil || into == nil {
+		return nil
+	}
+
+	if opts != nil {
+		return &GelatinClient{from: from, into: into, opts: *opts}
+	} else {
+		return &GelatinClient{from: from, into: into}
 	}
 }
 
@@ -124,17 +136,25 @@ func (c *GelatinClient) DiffUsers(full bool) (string, error) {
 	return cmp.Diff(fromUsernames, intoUsernames), nil
 }
 
-func addItemById(item *GelatinLibraryItem, playedItemData map[string]*GelatinLibraryItemUserActivity) {
-	// For each item, insert an entry for each of the available provider IDs
+// getProviderIds returns a list of provider IDs for an item
+func getProviderIds(item *GelatinLibraryItem) []string {
+	var providerIds []string
 	if item.ImdbId != "" {
-		playedItemData[item.ImdbId] = item.UserData
+		providerIds = append(providerIds, item.ImdbId)
 	}
 	if item.TmdbId != "" {
-		playedItemData[item.TmdbId] = item.UserData
+		providerIds = append(providerIds, item.TmdbId)
 	}
 	if item.TvdbId != "" {
-		playedItemData[item.TvdbId] = item.UserData
+		providerIds = append(providerIds, item.TvdbId)
 	}
+
+	// As a fallback, use the name of the item as a provider
+	if len(providerIds) == 0 {
+		providerIds = append(providerIds, item.Name)
+	}
+
+	return providerIds
 }
 
 // handleSeries recursively updates the playedItemData map for a given series.
@@ -146,23 +166,16 @@ func addItemById(item *GelatinLibraryItem, playedItemData map[string]*GelatinLib
 // c. Run a second query for the series' seasons (children)
 // d. For each season, check if it is fully played; if it is, store an entry and return
 // e. If the current season is not fully played, walk through each episode of the season and store an individual entry for the episode
-func handleSeries(svc GelatinLibraryService, item *GelatinLibraryItem, userId string, seriesProviderIds []string, playedItemData map[string]*GelatinLibraryItemUserActivity) error {
+func handleSeries(svc GelatinLibraryService, item *GelatinLibraryItem, userId string, seriesProviderIds []string, playedItemData map[string]*GelatinLibraryItem) error {
 	switch item.Type {
 	case "Series":
 		if item.UserData.Played && item.UserData.PlayedPercentage == 100 {
 			// The series is fully played, so just add an entry for it
-			addItemById(item, playedItemData)
+			for _, id := range getProviderIds(item) {
+				playedItemData[id] = item
+			}
 		} else {
-			var seriesProviderIds []string
-			if item.ImdbId != "" {
-				seriesProviderIds = append(seriesProviderIds, item.ImdbId)
-			}
-			if item.TmdbId != "" {
-				seriesProviderIds = append(seriesProviderIds, item.TmdbId)
-			}
-			if item.TvdbId != "" {
-				seriesProviderIds = append(seriesProviderIds, item.TvdbId)
-			}
+			seriesProviderIds := getProviderIds(item)
 
 			children, err := svc.GetItemsByUser(userId, map[string]string{
 				svc.GetItemFilterString(GelatinItemFilterParentId): item.Id,
@@ -172,8 +185,8 @@ func handleSeries(svc GelatinLibraryService, item *GelatinLibraryItem, userId st
 			}
 
 			// These could either be episodes or seasons
-			for _, child := range children {
-				handleSeries(svc, &child, userId, seriesProviderIds, playedItemData)
+			for i := range children {
+				handleSeries(svc, &children[i], userId, seriesProviderIds, playedItemData)
 			}
 		}
 	case "Season":
@@ -181,7 +194,7 @@ func handleSeries(svc GelatinLibraryService, item *GelatinLibraryItem, userId st
 			// The season is fully played, so just add an entry for it (for each provider ID)
 			for _, id := range seriesProviderIds {
 				seasonKey := fmt.Sprintf("%s-%d", id, item.IndexNumber)
-				playedItemData[seasonKey] = item.UserData
+				playedItemData[seasonKey] = item
 			}
 		} else {
 			episodes, err := svc.GetItemsByUser(userId, map[string]string{
@@ -191,18 +204,68 @@ func handleSeries(svc GelatinLibraryService, item *GelatinLibraryItem, userId st
 				return err
 			}
 
-			for _, episode := range episodes {
-				handleSeries(svc, &episode, userId, seriesProviderIds, playedItemData)
+			for i := range episodes {
+				handleSeries(svc, &episodes[i], userId, seriesProviderIds, playedItemData)
 			}
 		}
 	case "Episode":
 		for _, id := range seriesProviderIds {
 			episodeKey := fmt.Sprintf("%s-%d-%d", id, item.ParentIndexNumber, item.IndexNumber)
-			playedItemData[episodeKey] = item.UserData
+			playedItemData[episodeKey] = item
 		}
 	}
 
 	return nil
+}
+
+func promptUserYesNo(message string) bool {
+	fmt.Printf("%s (y/n) [y]: ", message)
+	var in string
+	fmt.Scanf("%s", &in)
+	return strings.ToLower(strings.TrimSpace(in)) != "n"
+}
+
+func promptUserForWatchItem(old, new *GelatinLibraryItem) bool {
+	var message string
+
+	oldPlayed, newPlayed := old.UserData.Played, new.UserData.Played
+	oldFavorite, newFavorite := old.UserData.IsFavorite, new.UserData.IsFavorite
+	oldTicks, newTicks := old.UserData.PlaybackPositionTicks, new.UserData.PlaybackPositionTicks
+
+	var played, favorite, ticks string
+
+	if oldPlayed != newPlayed {
+		played = fmt.Sprintf("%v->%v", oldPlayed, newPlayed)
+	} else {
+		played = fmt.Sprintf("%v", oldPlayed)
+	}
+
+	if oldFavorite != newFavorite {
+		favorite = fmt.Sprintf("%v->%v", oldFavorite, newFavorite)
+	} else {
+		favorite = fmt.Sprintf("%v", oldFavorite)
+	}
+
+	if oldTicks != newTicks {
+		ticks = fmt.Sprintf("%v->%v", oldTicks, newTicks)
+	} else {
+		ticks = fmt.Sprintf("%v", oldTicks)
+	}
+
+	switch old.Type {
+	case "Movie":
+		message = fmt.Sprintf("Movie: %q, Played: %s, Favorite: %s, Ticks: %s", old.Name, played, favorite, ticks)
+	case "Series":
+		message = fmt.Sprintf("Series: %q, Played: %s, Favorite: %s", old.Name, played, favorite)
+	case "Season":
+		message = fmt.Sprintf("Season: %q (%q), Played: %s, Favorite: %s", old.Name, old.SeriesName, played, favorite)
+	case "Episode":
+		message = fmt.Sprintf("Episode: %q (%q), Played: %s, Favorite: %s, Ticks: %s", old.Name, old.SeriesName, played, favorite, ticks)
+	default:
+		panic(fmt.Sprintf("unexpected item type: %s for %v", old.Type, old))
+	}
+
+	return promptUserYesNo(message)
 }
 
 // MigrateUserWatchHistory migrates a user's watch history from one service to another.
@@ -233,14 +296,16 @@ func (c *GelatinClient) MigrateUserWatchHistory(username string) error {
 	}
 
 	// Build a map of user data for the items played in the from service
-	playedItemData := make(map[string]*GelatinLibraryItemUserActivity)
-	for _, item := range fromLibraryItems {
+	playedItemData := make(map[string]*GelatinLibraryItem)
+	for i, item := range fromLibraryItems {
 		switch item.Type {
 		case "Movie":
-			addItemById(&item, playedItemData)
+			for _, id := range getProviderIds(&item) {
+				playedItemData[id] = &fromLibraryItems[i]
+			}
 		case "Series":
 			// Recursively handle this series
-			err := handleSeries(c.from.Library(), &item, fromUser.Id, nil, playedItemData)
+			err := handleSeries(c.from.Library(), &fromLibraryItems[i], fromUser.Id, nil, playedItemData)
 			if err != nil {
 				return err
 			}
@@ -257,31 +322,20 @@ func (c *GelatinClient) MigrateUserWatchHistory(username string) error {
 	seriesIdToProviderIds := make(map[string][]string)
 	for _, item := range intoLibraryItems {
 		if item.Type == "Series" {
-			var seriesProviderIds []string
-			if item.ImdbId != "" {
-				seriesProviderIds = append(seriesProviderIds, item.ImdbId)
-			}
-			if item.TmdbId != "" {
-				seriesProviderIds = append(seriesProviderIds, item.TmdbId)
-			}
-			if item.TvdbId != "" {
-				seriesProviderIds = append(seriesProviderIds, item.TvdbId)
-			}
-
-			seriesIdToProviderIds[item.Id] = seriesProviderIds
+			seriesIdToProviderIds[item.Id] = getProviderIds(&item)
 		}
 	}
 
 	// Finally, run through the list of items once more and update user watch state if it differs
 	for _, item := range intoLibraryItems {
-		var fromUserData *GelatinLibraryItemUserActivity
+		var fromItem *GelatinLibraryItem
 
 		switch item.Type {
 		case "Movie", "Series":
 			keys := []string{item.ImdbId, item.TmdbId, item.TvdbId}
 			for _, key := range keys {
 				if data, ok := playedItemData[key]; ok {
-					fromUserData = data
+					fromItem = data
 					break
 				}
 			}
@@ -290,7 +344,7 @@ func (c *GelatinClient) MigrateUserWatchHistory(username string) error {
 			for _, id := range providerIds {
 				key := fmt.Sprintf("%s-%d", id, item.IndexNumber)
 				if data, ok := playedItemData[key]; ok {
-					fromUserData = data
+					fromItem = data
 					break
 				}
 			}
@@ -299,28 +353,31 @@ func (c *GelatinClient) MigrateUserWatchHistory(username string) error {
 			for _, id := range providerIds {
 				key := fmt.Sprintf("%s-%d-%d", id, item.ParentIndexNumber, item.IndexNumber)
 				if data, ok := playedItemData[key]; ok {
-					fromUserData = data
+					fromItem = data
 					break
 				}
 			}
 		}
 
-		if fromUserData == nil {
+		if fromItem == nil {
 			// This item is not present in the from service, so we can skip it
 			continue
 		}
 
-		intoUserData := item.UserData
-		needUpdate := !intoUserData.IsMatch(fromUserData)
+		needUpdate := !item.UserData.IsMatch(fromItem.UserData)
 
 		if needUpdate {
-			err := c.into.Library().UpdateItemUserActivity(item.Id, intoUser.Id, intoUserData, fromUserData)
-			if err != nil {
-				log.Printf("failed to set user data for item %+v", item)
-				return err
+			if c.opts.Interactive {
+				if !promptUserForWatchItem(&item, fromItem) {
+					// User skipped this item
+					continue
+				}
 			}
 
-			log.Printf("Updated data for item %q to %+v", item.Name, fromUserData)
+			err := c.into.Library().UpdateItemUserActivity(item.Id, intoUser.Id, item.UserData, fromItem.UserData)
+			if err != nil {
+				return fmt.Errorf("failed to set user data for item %q: %v", item.Name, err)
+			}
 		}
 	}
 

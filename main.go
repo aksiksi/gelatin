@@ -202,7 +202,8 @@ func verifyGelatinClient() {
 	jellyfinKey, _ := jellyfinClient.User().Authenticate(jellyfinAdminUser, jellyfinAdminPass)
 	jellyfinClient.SetApiKey(jellyfinKey)
 
-	client := gelatin.NewGelatinClient(embyClient, jellyfinClient)
+	opts := &gelatin.GelatinClientOpts{Interactive: true}
+	client := gelatin.NewGelatinClient(embyClient, jellyfinClient, opts)
 
 	userDiff, err := client.DiffUsers(false)
 	if err != nil {

@@ -537,7 +537,7 @@ func (c *JellyfinApiClient) UpdateItemUserActivity(itemId string, userId string,
 	}
 
 	// TODO(aksiksi): Figure out why this isn't working. Do we need to use /Sessions?
-	if !new.Played && new.PlaybackPositionTicks != 0 {
+	if !new.Played && old.PlaybackPositionTicks != new.PlaybackPositionTicks {
 		if err := c.updateItemPlayingState(itemId, userId, new.PlaybackPositionTicks); err != nil {
 			return err
 		}

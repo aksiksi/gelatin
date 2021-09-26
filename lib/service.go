@@ -135,16 +135,13 @@ func (i *GelatinLibraryItemUserActivity) IsMatch(other *GelatinLibraryItemUserAc
 	if i.Played != other.Played {
 		return false
 	}
-	if i.PlayCount != other.PlayCount {
-		return false
-	}
 	if i.PlaybackPositionTicks != other.PlaybackPositionTicks {
 		return false
 	}
 	if i.Rating != other.Rating {
 		return false
 	}
-	if i.Rating != other.Rating {
+	if i.PlayedPercentage != other.PlayedPercentage {
 		return false
 	}
 
