@@ -219,12 +219,6 @@ func verifyGelatinClient() {
 	if err := client.MigrateUserWatchHistory("tksiksi"); err != nil {
 		log.Print(err)
 	}
-
-	// clientInverse := gelatin.NewGelatinClient(jellyfinClient, embyClient)
-
-	// if err := clientInverse.MigrateUserWatchHistory("aksiksi"); err != nil {
-	// 	log.Fatal(err)
-	// }
 }
 
 func main() {

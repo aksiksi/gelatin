@@ -79,6 +79,10 @@ func (c *GelatinClient) MigrateUsers(passwords map[string]string) error {
 	}
 
 	for i, user := range createUsers {
+		if c.opts.Interactive {
+			promptUserYesNo("Create user: %s", user.Name)
+		}
+
 		newUser, err := c.into.User().CreateUser(user.Name)
 		if err != nil {
 			return err
@@ -91,6 +95,10 @@ func (c *GelatinClient) MigrateUsers(passwords map[string]string) error {
 
 	// TODO: Migrate this to iterate over deleteUsers
 	for i, user := range createUsers {
+		if c.opts.Interactive {
+			promptUserYesNo("Delete user: %s", user.Name)
+		}
+
 		err := c.into.User().DeleteUser(user.Id)
 		if err != nil {
 			return err
@@ -218,8 +226,8 @@ func handleSeries(svc GelatinLibraryService, item *GelatinLibraryItem, userId st
 	return nil
 }
 
-func promptUserYesNo(message string) bool {
-	fmt.Printf("%s (y/n) [y]: ", message)
+func promptUserYesNo(message string, args ...interface{}) bool {
+	fmt.Printf("%s (y/n) [y]: ", fmt.Sprintf(message, args...))
 	var in string
 	fmt.Scanf("%s", &in)
 	return strings.ToLower(strings.TrimSpace(in)) != "n"
